@@ -1,0 +1,17 @@
+{
+  "accuracy": 0.8,
+  "precision": 0.8214,
+  "recall": 0.7667,
+  "f1_score": 0.7931,
+  "specificity": 0.8333,
+  "auc_roc": 0.8944,
+  "best_val_accuracy": 96.43,
+  "class_names": [
+    "healthy",
+    "parkinson"
+  ],
+  "class_indices": {
+    "healthy": 0,
+    "parkinson": 1
+  }
+}

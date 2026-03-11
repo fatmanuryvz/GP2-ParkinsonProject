@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroScan — Parkinson Erken Tanı Sistemi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#060912;--surface:#0e1525;--surface2:#162035;
+    --border:rgba(99,179,237,0.12);--accent:#63b3ed;--accent2:#4ade80;
+    --accent3:#fb923c;--danger:#f87171;--text:#e8f0fe;--muted:#7891b0;
+    --mono:'IBM Plex Mono',monospace;--serif:'DM Serif Display',serif;--sans:'Syne',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+  .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(99,179,237,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,179,237,0.03) 1px,transparent 1px);background-size:50px 50px;pointer-events:none}
+  .orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}
+  .orb1{width:500px;height:500px;background:rgba(99,179,237,0.07);top:-100px;left:-100px;animation:float1 20s ease-in-out infinite}
+  .orb2{width:400px;height:400px;background:rgba(74,222,128,0.05);bottom:-50px;right:-80px;animation:float2 25s ease-in-out infinite}
+  @keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}
+  @keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,-30px)}}
+  .container{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:0 24px}
+  header{padding:28px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+  .logo-mark{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:20px}
+  .logo-text{font-family:var(--sans);font-weight:800;font-size:1.4rem;color:var(--text)}
+  .logo-text span{color:var(--accent)}
+  .header-badge{font-family:var(--mono);font-size:0.7rem;color:var(--accent2);border:1px solid rgba(74,222,128,0.3);padding:5px 12px;border-radius:20px;background:rgba(74,222,128,0.05);animation:pulse-border 3s ease-in-out infinite}
+  @keyframes pulse-border{0%,100%{border-color:rgba(74,222,128,0.3)}50%{border-color:rgba(74,222,128,0.7)}}
+  .hero{padding:70px 0 50px;text-align:center}
+  .hero-tag{display:inline-block;font-family:var(--mono);font-size:0.72rem;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:24px;padding:6px 16px;border:1px solid rgba(99,179,237,0.3);border-radius:4px;background:rgba(99,179,237,0.06);animation:fadeDown 0.6s ease both}
+  .hero h1{font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.8rem);line-height:1.1;color:var(--text);animation:fadeUp 0.7s ease 0.1s both;max-width:800px;margin:0 auto 20px}
+  .hero h1 em{color:var(--accent);font-style:italic}
+  .hero p{color:var(--muted);font-size:1rem;max-width:560px;margin:0 auto 50px;line-height:1.7;animation:fadeUp 0.7s ease 0.2s both}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-15px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:60px;animation:fadeUp 0.7s ease 0.3s both}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 16px;text-align:center;transition:all 0.3s;position:relative;overflow:hidden}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent-color,var(--accent)),transparent);opacity:0;transition:opacity 0.3s}
+  .stat-card:hover{transform:translateY(-3px);border-color:rgba(99,179,237,0.25)}
+  .stat-card:hover::before{opacity:1}
+  .stat-val{font-family:var(--mono);font-size:1.7rem;font-weight:500;margin-bottom:6px;display:block}
+  .stat-label{color:var(--muted);font-size:0.75rem;font-weight:600;letter-spacing:0.5px}
+  .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+  .full-width{grid-column:1/-1}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;animation:fadeUp 0.6s ease both}
+  .card-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .card-title{font-family:var(--sans);font-weight:700;font-size:1rem;color:var(--text);display:flex;align-items:center;gap:10px}
+  .card-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .card-body{padding:24px}
+  .upload-zone{border:2px dashed rgba(99,179,237,0.3);border-radius:14px;padding:50px 30px;text-align:center;cursor:pointer;transition:all 0.3s;position:relative;background:rgba(99,179,237,0.02)}
+  .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(99,179,237,0.06);transform:scale(1.01)}
+  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .upload-icon{font-size:2.5rem;margin-bottom:16px;display:block}
+  .upload-text{font-weight:600;font-size:1rem;margin-bottom:8px}
+  .upload-sub{color:var(--muted);font-size:0.82rem;font-family:var(--mono)}
+  .preview-area{display:none}
+  .preview-area.active{display:block}
+  .preview-img{width:100%;border-radius:10px;max-height:260px;object-fit:contain;background:#000;display:block}
+  .analyze-btn{width:100%;margin-top:16px;padding:14px;background:linear-gradient(135deg,var(--accent),#4299e1);border:none;border-radius:10px;color:white;font-family:var(--sans);font-weight:700;font-size:0.95rem;cursor:pointer;transition:all 0.3s;letter-spacing:0.5px}
+  .analyze-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(99,179,237,0.3)}
+  .analyze-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+  .reset-btn{width:100%;margin-top:8px;padding:10px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:var(--sans);cursor:pointer;font-size:0.85rem;transition:all 0.2s}
+  .reset-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .result-box{display:none;margin-top:20px;border-radius:12px;padding:20px;animation:fadeUp 0.4s ease both}
+  .result-box.healthy{background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25)}
+  .result-box.parkinson{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25)}
+  .result-box.active{display:block}
+  .result-label{font-family:var(--sans);font-weight:800;font-size:1.3rem;margin-bottom:8px}
+  .result-conf{font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-bottom:16px}
+  .prob-bar-wrap{margin-bottom:8px}
+  .prob-label{display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:4px}
+  .prob-bar{height:8px;background:rgba(255,255,255,0.08);border-radius:999px;overflow:hidden}
+  .prob-fill{height:100%;border-radius:999px;transition:width 1s cubic-bezier(.16,1,.3,1)}
+  .disclaimer{font-size:0.72rem;color:var(--muted);margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-family:var(--mono)}
+  .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .metric-item{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+  .metric-val{font-family:var(--mono);font-size:1.4rem;font-weight:500;display:block;margin-bottom:4px}
+  .metric-name{color:var(--muted);font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+  .metric-bar{height:3px;background:rgba(255,255,255,0.07);border-radius:999px;margin-top:12px}
+  .metric-bar-fill{height:100%;border-radius:999px;transition:width 1.5s cubic-bezier(.16,1,.3,1)}
+  .tab-row{display:flex;gap:4px;padding:16px 24px 0}
+  .tab-btn{font-family:var(--mono);font-size:0.72rem;font-weight:500;padding:7px 16px;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:all 0.2s;color:var(--muted);background:transparent;letter-spacing:0.5px;text-transform:uppercase}
+  .tab-btn.active{background:rgba(99,179,237,0.12);border-color:rgba(99,179,237,0.3);color:var(--accent)}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+  .epoch-chart{height:260px}
+  .cm-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:3px;max-width:320px;margin:0 auto}
+  .cm-cell{border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:500;padding:6px}
+  .cm-header{font-size:0.65rem;color:var(--muted);text-align:center;padding:6px;font-family:var(--mono)}
+  .cm-label{font-size:0.65rem;color:var(--muted);padding:4px 8px;display:flex;align-items:center}
+  .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+  .status-dot.online{background:var(--accent2);animation:pulse-dot 2s ease-in-out infinite}
+  .status-dot.offline{background:var(--danger)}
+  @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+  .arch-layer{display:flex;align-items:center;overflow-x:auto;padding:20px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .arch-block{flex-shrink:0;border-radius:10px;padding:10px 6px;text-align:center;cursor:default;transition:transform 0.2s}
+  .arch-block:hover{transform:scale(1.08);z-index:10}
+  .arch-block-inner{width:70px;min-height:60px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;gap:4px}
+  .arch-arrow{color:var(--muted);font-size:1.1rem;flex-shrink:0;margin:0 2px}
+  .arch-name{font-size:0.6rem;font-weight:700;font-family:var(--mono)}
+  .arch-detail{font-size:0.52rem;color:rgba(255,255,255,0.6);font-family:var(--mono)}
+  .code-block{background:#0a0f1a;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:12px;font-family:var(--mono);font-size:0.72rem;color:#7dd3fc;line-height:1.7;overflow-x:auto;white-space:pre}
+  .code-comment{color:#475569}.code-keyword{color:#c084fc}.code-string{color:#86efac}.code-num{color:#fb923c}
+  footer{border-top:1px solid var(--border);padding:30px 0;margin-top:60px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:0.72rem}
+  footer span{color:var(--accent)}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  @media(max-width:900px){.main-grid{grid-template-columns:1fr}.stats-row{grid-template-columns:repeat(3,1fr)}.metric-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="container">
+  <header>
+    <a class="logo" href="#">
+      <div class="logo-mark">🧠</div>
+      <div class="logo-text">Neuro<span>Scan</span></div>
+    </a>
+    <div style="display:flex;gap:12px;align-items:center">
+      <span id="apiStatus" style="font-family:var(--mono);font-size:0.72rem;color:var(--muted)">
+        <span class="status-dot offline" id="statusDot"></span>
+        <span id="statusText">API kontrol ediliyor...</span>
+      </span>
+      <div class="header-badge">● MobileNetV2</div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-tag">GÖRÜNTÜ İŞLEME + YAPAY ZEKA</div>
+    <h1>Parkinson Hastalığı<br><em>Erken Tanı Sistemi</em></h1>
+    <p>Spiral ve dalga çizim görüntülerini analiz eden MobileNetV2 Transfer Learning modeliyle geliştirilen klinik destek aracı.</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card" style="--accent-color:var(--accent2)">
+      <span class="stat-val" style="color:var(--accent2)" id="stat-acc">—</span>
+      <div class="stat-label">Test Doğruluğu</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--accent)">
+      <span class="stat-val" style="color:var(--accent)" id="stat-auc">—</span>
+      <div class="stat-label">AUC-ROC Skoru</div>
+    </div>
+    <div class="stat-card" style="--accent-color:#a78bfa">
+      <span class="stat-val" style="color:#a78bfa" id="stat-f1">—</span>
+      <div class="stat-label">F1-Score</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--accent3)">
+      <span class="stat-val" style="color:var(--accent3)" id="stat-prec">—</span>
+      <div class="stat-label">Precision</div>
+    </div>
+    <div class="stat-card" style="--accent-color:#f472b6">
+      <span class="stat-val" style="color:#f472b6" id="stat-spec">—</span>
+      <div class="stat-label">Specificity</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- UPLOAD -->
+    <div class="card" style="animation-delay:0.1s">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon" style="background:rgba(99,179,237,0.15)">🔬</div>
+          Görüntü Analizi
+        </div>
+        <span style="font-family:var(--mono);font-size:0.68rem;color:var(--muted)">Spiral / Dalga</span>
+      </div>
+      <div class="card-body">
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept="image/*">
+          <span class="upload-icon">🖊️</span>
+          <div class="upload-text">Çizim Görüntüsü Yükle</div>
+          <div class="upload-sub">PNG, JPG • Spiral veya Dalga çizimi</div>
+        </div>
+        <div class="preview-area" id="previewArea">
+          <img class="preview-img" id="previewImg" src="" alt="Preview">
+          <button class="analyze-btn" id="analyzeBtn" onclick="analyzeImage()">🔍 Analiz Et</button>
+          <button class="reset-btn" onclick="resetUpload()">Yeni Görüntü</button>
+        </div>
+        <div class="result-box" id="resultBox">
+          <div class="result-label" id="resultLabel"></div>
+          <div class="result-conf" id="resultConf"></div>
+          <div class="prob-bar-wrap">
+            <div class="prob-label">
+              <span style="color:var(--accent2)">● Sağlıklı</span>
+              <span id="healthyPct" style="font-family:var(--mono);font-size:0.8rem"></span>
+            </div>
+            <div class="prob-bar"><div class="prob-fill" id="healthyBar" style="background:var(--accent2);width:0%"></div></div>
+          </div>
+          <div class="prob-bar-wrap" style="margin-top:10px">
+            <div class="prob-label">
+              <span style="color:var(--danger)">● Parkinson</span>
+              <span id="parkinsonPct" style="font-family:var(--mono);font-size:0.8rem"></span>
+            </div>
+            <div class="prob-bar"><div class="prob-fill" id="parkinsonBar" style="background:var(--danger);width:0%"></div></div>
+          </div>
+          <div class="disclaimer">⚠ Bu sonuç bir yapay zeka tahminidir. Kesin tanı için nöroloji uzmanına başvurunuz.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METRİKLER -->
+    <div class="card" style="animation-delay:0.15s">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon" style="background:rgba(74,222,128,0.15)">📊</div>
+          Model Performans Metrikleri
+        </div>
+        <span style="font-family:var(--mono);font-size:0.68rem;color:var(--accent2)">Gerçek Sonuçlar</span>
+      </div>
+      <div class="card-body">
+        <div class="metric-grid" id="metricGrid">
+          <div class="metric-item"><span class="metric-val" style="color:var(--accent2)" id="m-acc">—</span><div class="metric-name">Accuracy</div><div class="metric-bar"><div class="metric-bar-fill" id="mb-acc" style="background:var(--accent2);width:0%"></div></div></div>
+          <div class="metric-item"><span class="metric-val" style="color:var(--accent)" id="m-prec">—</span><div class="metric-name">Precision</div><div class="metric-bar"><div class="metric-bar-fill" id="mb-prec" style="background:var(--accent);width:0%"></div></div></div>
+          <div class="metric-item"><span class="metric-val" style="color:#a78bfa" id="m-rec">—</span><div class="metric-name">Recall</div><div class="metric-bar"><div class="metric-bar-fill" id="mb-rec" style="background:#a78bfa;width:0%"></div></div></div>
+          <div class="metric-item"><span class="metric-val" style="color:#f472b6" id="m-f1">—</span><div class="metric-name">F1-Score</div><div class="metric-bar"><div class="metric-bar-fill" id="mb-f1" style="background:#f472b6;width:0%"></div></div></div>
+          <div class="metric-item"><span class="metric-val" style="color:var(--accent3)" id="m-spec">—</span><div class="metric-name">Specificity</div><div class="metric-bar"><div class="metric-bar-fill" id="mb-spec" style="background:var(--accent3);width:0%"></div></div></div>
+          <div class="metric-item"><span class="metric-val" style="color:#34d399" id="m-auc">—</span><div class="metric-name">AUC-ROC</div><div class="metric-bar"><div class="metric-bar-fill" id="mb-auc" style="background:#34d399;width:0%"></div></div></div>
+        </div>
+        <div style="margin-top:28px">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:16px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)">Confusion Matrix</div>
+          <div class="cm-grid" id="cmGrid">
+            <div></div>
+            <div class="cm-header">Tahmin: Sağlıklı</div>
+            <div class="cm-header">Tahmin: Parkinson</div>
+            <div class="cm-label">Gerçek: Sağlıklı</div>
+            <div class="cm-cell" style="background:rgba(74,222,128,0.2);color:var(--accent2);font-size:1.3rem;height:60px" id="cm-tn">—</div>
+            <div class="cm-cell" style="background:rgba(248,113,113,0.12);color:var(--danger);font-size:1.1rem;height:60px" id="cm-fp">—</div>
+            <div class="cm-label">Gerçek: Parkinson</div>
+            <div class="cm-cell" style="background:rgba(248,113,113,0.12);color:var(--danger);font-size:1.1rem;height:60px" id="cm-fn">—</div>
+            <div class="cm-cell" style="background:rgba(74,222,128,0.2);color:var(--accent2);font-size:1.3rem;height:60px" id="cm-tp">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="card full-width" style="animation-delay:0.2s">
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('architecture')">CNN Mimarisi</button>
+        <button class="tab-btn" onclick="switchTab('info')">Model Bilgisi</button>
+      </div>
+      <div class="card-body">
+        <div class="tab-panel active" id="tab-architecture">
+          <div class="arch-layer" id="archLayer"></div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);line-height:2;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <div>🏗 <strong style="color:var(--text)">Mimari:</strong> MobileNetV2</div>
+              <div>⚙️ <strong style="color:var(--text)">Strateji:</strong> Transfer Learning</div>
+              <div>📉 <strong style="color:var(--text)">Loss:</strong> Binary Cross-Entropy</div>
+              <div>🔄 <strong style="color:var(--text)">Augmentation:</strong> Rotation, Flip, Zoom</div>
+              <div>📦 <strong style="color:var(--text)">Batch Size:</strong> 16</div>
+              <div>🎯 <strong style="color:var(--text)">Fine-tune:</strong> Son 40 katman</div>
+              <div>📐 <strong style="color:var(--text)">Input:</strong> 224×224×3 RGB</div>
+              <div>📊 <strong style="color:var(--text)">Veri:</strong> Spiral + Wave</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-panel" id="tab-info">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px">
+            <div>
+              <div style="font-weight:700;margin-bottom:12px;color:var(--accent)">📦 Kaggle Dataset</div>
+              <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);line-height:2">
+                Dataset: kmader/parkinsons-drawings<br>
+                Spiral Training: 72 görüntü<br>
+                Wave Training: 72 görüntü<br>
+                Toplam Test: 60 görüntü<br>
+                Sınıflar: healthy / parkinson
+              </div>
+              <a href="https://www.kaggle.com/datasets/kmader/parkinsons-drawings" target="_blank"
+                 style="display:inline-flex;align-items:center;gap:8px;background:rgba(32,177,192,0.1);border:1px solid rgba(32,177,192,0.3);color:#20b1c0;font-family:var(--mono);font-size:0.75rem;padding:8px 14px;border-radius:8px;text-decoration:none;margin-top:12px">
+                🏆 Kaggle'da Görüntüle →
+              </a>
+            </div>
+            <div>
+              <div style="font-weight:700;margin-bottom:12px;color:var(--accent2)">🔬 Yöntem</div>
+              <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);line-height:2">
+                Parkinson hastalarında tremor<br>
+                nedeniyle spiral çizimler bozulur.<br>
+                Model bu görsel deseni öğrenir.<br><br>
+                MobileNetV2 ImageNet ağırlıkları<br>
+                ile başlatılıp fine-tune edildi.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>NeuroScan</span> — Parkinson Erken Tanı Sistemi •
+      MobileNetV2 Transfer Learning •
+      <span>⚠ Yalnızca araştırma amaçlıdır</span>
+    </div>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const API = "http://127.0.0.1:5000";
+
+// ── API Durum Kontrolü ──
+async function checkAPI() {
+  try {
+    const r = await fetch(API + "/health", {signal: AbortSignal.timeout(3000)});
+    const d = await r.json();
+    document.getElementById("statusDot").className = "status-dot online";
+    document.getElementById("statusText").textContent = "API Bağlı ✓";
+    document.getElementById("statusText").style.color = "var(--accent2)";
+    loadMetrics();
+  } catch {
+    document.getElementById("statusDot").className = "status-dot offline";
+    document.getElementById("statusText").textContent = "API Bağlı Değil";
+    document.getElementById("statusText").style.color = "var(--danger)";
+  }
+}
+
+// ── Metrikleri Yükle ──
+async function loadMetrics() {
+  try {
+    const r = await fetch(API + "/metrics");
+    const d = await r.json();
+
+    const fmt = v => (v * 100).toFixed(2) + "%";
+    const fmtAuc = v => v.toFixed(4);
+
+    // Stats row
+    document.getElementById("stat-acc").textContent  = fmt(d.accuracy);
+    document.getElementById("stat-auc").textContent  = fmtAuc(d.auc_roc);
+    document.getElementById("stat-f1").textContent   = fmt(d.f1_score);
+    document.getElementById("stat-prec").textContent = fmt(d.precision);
+    document.getElementById("stat-spec").textContent = fmt(d.specificity);
+
+    // Metric cards
+    document.getElementById("m-acc").textContent  = fmt(d.accuracy);
+    document.getElementById("m-prec").textContent = fmt(d.precision);
+    document.getElementById("m-rec").textContent  = fmt(d.recall);
+    document.getElementById("m-f1").textContent   = fmt(d.f1_score);
+    document.getElementById("m-spec").textContent = fmt(d.specificity);
+    document.getElementById("m-auc").textContent  = fmtAuc(d.auc_roc);
+
+    // Bars
+    setTimeout(() => {
+      document.getElementById("mb-acc").style.width  = (d.accuracy*100)  + "%";
+      document.getElementById("mb-prec").style.width = (d.precision*100) + "%";
+      document.getElementById("mb-rec").style.width  = (d.recall*100)    + "%";
+      document.getElementById("mb-f1").style.width   = (d.f1_score*100)  + "%";
+      document.getElementById("mb-spec").style.width = (d.specificity*100)+ "%";
+      document.getElementById("mb-auc").style.width  = (d.auc_roc*100)   + "%";
+    }, 400);
+
+    // Confusion matrix (tahmini)
+    const total = 60;
+    const tp = Math.round(d.recall * 30);
+    const fn = 30 - tp;
+    const tn = Math.round(d.specificity * 30);
+    const fp = 30 - tn;
+    document.getElementById("cm-tp").textContent = tp;
+    document.getElementById("cm-fn").textContent = fn;
+    document.getElementById("cm-tn").textContent = tn;
+    document.getElementById("cm-fp").textContent = fp;
+
+  } catch(e) {
+    console.log("Metrik yüklenemedi:", e);
+  }
+}
+
+// ── Tab ──
+function switchTab(id) {
+  document.querySelectorAll(".tab-btn").forEach((b,i) => {
+    b.classList.toggle("active", ["architecture","info"][i] === id);
+  });
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  document.getElementById("tab-"+id).classList.add("active");
+}
+
+// ── CNN Mimari ──
+const archLayers = [
+  {name:"INPUT",detail:"224×224×3",color:"#1f6feb",bg:"rgba(31,111,235,0.15)"},
+  {name:"MOBILENET\nV2",detail:"ImageNet\nweights",color:"#388bfd",bg:"rgba(56,139,253,0.12)"},
+  {name:"FROZEN\nLAYERS",detail:"~120\nkatman",color:"#58a6ff",bg:"rgba(88,166,255,0.1)"},
+  {name:"FINE-TUNE",detail:"Son 40\nkatman",color:"#79c0ff",bg:"rgba(121,192,255,0.1)"},
+  {name:"GAP",detail:"1280-d\nvector",color:"#3fb950",bg:"rgba(63,185,80,0.12)"},
+  {name:"FC-256",detail:"ReLU\nBatchNorm",color:"#f0883e",bg:"rgba(240,136,62,0.12)"},
+  {name:"DROP\n0.5",detail:"Regularize",color:"#db6d28",bg:"rgba(219,109,40,0.1)"},
+  {name:"FC-64",detail:"ReLU",color:"#f0883e",bg:"rgba(240,136,62,0.1)"},
+  {name:"DROP\n0.3",detail:"Regularize",color:"#db6d28",bg:"rgba(219,109,40,0.08)"},
+  {name:"SIGMOID",detail:"2 sınıf\nOutput",color:"#f85149",bg:"rgba(248,81,73,0.15)"},
+];
+const archContainer = document.getElementById("archLayer");
+archLayers.forEach((l,i) => {
+  if(i>0){const a=document.createElement("div");a.className="arch-arrow";a.textContent="→";archContainer.appendChild(a);}
+  const b=document.createElement("div");b.className="arch-block";
+  b.innerHTML=`<div class="arch-block-inner" style="background:${l.bg};border:1px solid ${l.color}40"><div class="arch-name" style="color:${l.color}">${l.name.replace("\n","<br>")}</div><div class="arch-detail">${l.detail.replace("\n","<br>")}</div></div>`;
+  archContainer.appendChild(b);
+});
+
+// ── Upload ──
+const fileInput = document.getElementById("fileInput");
+const uploadZone = document.getElementById("uploadZone");
+const previewArea = document.getElementById("previewArea");
+const previewImg = document.getElementById("previewImg");
+const resultBox = document.getElementById("resultBox");
+
+fileInput.addEventListener("change", e => { if(e.target.files[0]) showPreview(e.target.files[0]); });
+uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+uploadZone.addEventListener("drop", e => {
+  e.preventDefault(); uploadZone.classList.remove("drag-over");
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith("image/")) showPreview(f);
+});
+
+let currentFile = null;
+function showPreview(file) {
+  currentFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    uploadZone.style.display = "none";
+    previewArea.classList.add("active");
+    resultBox.classList.remove("active");
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetUpload() {
+  uploadZone.style.display = "block";
+  previewArea.classList.remove("active");
+  resultBox.classList.remove("active");
+  fileInput.value = "";
+  currentFile = null;
+}
+
+// ── Analiz (Gerçek API) ──
+async function analyzeImage() {
+  if(!currentFile) return;
+  const btn = document.getElementById("analyzeBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analiz ediliyor...';
+
+  try {
+    const formData = new FormData();
+    formData.append("file", currentFile);
+
+    const r = await fetch(API + "/predict", {method:"POST", body: formData});
+
+    if(!r.ok) throw new Error("API hatası: " + r.status);
+    const d = await r.json();
+
+    const isParkinson = d.prediction === "parkinson";
+    const rb = document.getElementById("resultBox");
+    const rl = document.getElementById("resultLabel");
+    const rc = document.getElementById("resultConf");
+
+    rb.className = "result-box active " + (isParkinson ? "parkinson" : "healthy");
+    rl.style.color = isParkinson ? "var(--danger)" : "var(--accent2)";
+    rl.textContent = isParkinson ? "⚠ Parkinson Belirtisi Tespit Edildi" : "✓ Sağlıklı — Parkinson Belirtisi Yok";
+    rc.textContent = `Güven skoru: ${d.confidence}% • Model: ${d.model}`;
+
+    document.getElementById("healthyPct").textContent   = d.healthy_prob + "%";
+    document.getElementById("parkinsonPct").textContent = d.parkinson_prob + "%";
+
+    setTimeout(() => {
+      document.getElementById("healthyBar").style.width   = d.healthy_prob + "%";
+      document.getElementById("parkinsonBar").style.width = d.parkinson_prob + "%";
+    }, 100);
+
+  } catch(err) {
+    alert("❌ API'ye bağlanılamadı!\n\nTerminalde şunu çalıştırın:\npython app.py\n\nHata: " + err.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = "🔍 Tekrar Analiz Et";
+}
+
+// Başlangıçta API'yi kontrol et
+checkAPI();
+setInterval(checkAPI, 10000);
+</script>
+</body>
+</html>
