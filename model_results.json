@@ -1,11 +1,11 @@
 {
-  "accuracy": 0.8,
-  "precision": 0.8214,
-  "recall": 0.7667,
-  "f1_score": 0.7931,
-  "specificity": 0.8333,
-  "auc_roc": 0.8944,
-  "best_val_accuracy": 96.43,
+  "accuracy": 0.8694,
+  "precision": 0.9945,
+  "recall": 0.7429,
+  "f1_score": 0.8505,
+  "specificity": 0.9959,
+  "auc_roc": 0.9858,
+  "best_val_accuracy": 87.96,
   "class_names": [
     "healthy",
     "parkinson"
@@ -13,5 +13,6 @@
   "class_indices": {
     "healthy": 0,
     "parkinson": 1
-  }
+  },
+  "dataset": "3264 g\u00f6r\u00fcnt\u00fc (1632 Healthy + 1632 Parkinson)"
 }

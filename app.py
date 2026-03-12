@@ -81,7 +81,7 @@ def predict():
             pk_prob = float(pred[0][pk_idx])
             h_prob  = float(pred[0][h_idx])
 
-        prediction = "parkinson" if pk_prob > 0.5 else "healthy"
+        prediction = "parkinson" if pk_prob > 0.35 else "healthy"  # Düşük eşik → Recall artışı
         confidence = pk_prob if pk_prob > 0.5 else h_prob
 
         return jsonify({

@@ -1,7 +1,7 @@
 """
-NeuroScan — Parkinson Tespiti
-Transfer Learning: MobileNetV2
-Spiral + Wave verisi birleştirildi → Daha yüksek doğruluk
+NeuroScan — Parkinson Erken Tanı Sistemi
+MobileNetV2 Transfer Learning
+Yeni Dataset: 3264 görüntü (1632 Healthy + 1632 Parkinson)
 """
 import os, json, shutil, warnings
 import numpy as np
@@ -12,6 +12,7 @@ from sklearn.metrics import (classification_report, confusion_matrix,
                               roc_auc_score, roc_curve,
                               accuracy_score, precision_score,
                               recall_score, f1_score)
+from sklearn.model_selection import train_test_split
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -22,75 +23,75 @@ tf.random.set_seed(42)
 np.random.seed(42)
 
 IMG_SIZE   = (224, 224)
-BATCH      = 16
+BATCH      = 32
 MODEL_PATH = "parkinson_cnn_model.h5"
+DATA_DIR   = "data_new/Dataset/Dataset"   # Healthy / Parkinson klasörleri burada
 
 print("="*60)
-print("  NeuroScan — MobileNetV2 (Spiral + Wave)")
+print("  NeuroScan — MobileNetV2 (3264 Görüntü)")
 print("="*60)
 
-# ── Spiral + Wave verilerini birleştir ──
-def merge_datasets():
-    """Spiral ve Wave verilerini tek klasörde birleştir"""
-    merged_train = "data/merged/training"
-    merged_test  = "data/merged/testing"
+# ── Train/Val/Test olarak ayır ──
+def split_dataset(data_dir, output_dir="data_split", test_size=0.15, val_size=0.15):
+    """Veriyi train/val/test olarak böl ve kopyala"""
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
 
-    for split in ['training', 'testing']:
-        for cls in ['healthy', 'parkinson']:
-            out = os.path.join("data/merged", split, cls)
+    classes = ['Healthy', 'Parkinson']
+    all_counts = {}
+
+    for cls in classes:
+        src = os.path.join(data_dir, cls)
+        files = [f for f in os.listdir(src) if f.lower().endswith(('.png','.jpg','.jpeg'))]
+        
+        # Train/val/test böl
+        train_val, test = train_test_split(files, test_size=test_size, random_state=42)
+        train, val      = train_test_split(train_val, test_size=val_size/(1-test_size), random_state=42)
+
+        all_counts[cls] = {'train': len(train), 'val': len(val), 'test': len(test)}
+
+        for split_name, split_files in [('training', train), ('validation', val), ('testing', test)]:
+            out = os.path.join(output_dir, split_name, cls.lower())
             os.makedirs(out, exist_ok=True)
+            for fname in split_files:
+                shutil.copy2(os.path.join(src, fname), os.path.join(out, fname))
 
-    count = 0
-    for dtype in ['spiral', 'wave']:
-        for split in ['training', 'testing']:
-            for cls in ['healthy', 'parkinson']:
-                src = os.path.join("data", dtype, split, cls)
-                dst = os.path.join("data/merged", split, cls)
-                if not os.path.exists(src):
-                    continue
-                for fname in os.listdir(src):
-                    if fname.lower().endswith(('.png','.jpg','.jpeg')):
-                        src_f = os.path.join(src, fname)
-                        dst_f = os.path.join(dst, f"{dtype}_{fname}")
-                        if not os.path.exists(dst_f):
-                            shutil.copy2(src_f, dst_f)
-                            count += 1
-    print(f"  ✓ {count} görüntü birleştirildi")
-    return merged_train, merged_test
+    return output_dir, all_counts
 
-print("\n📁 Spiral + Wave birleştiriliyor...")
-TRAIN_DIR, TEST_DIR = merge_datasets()
+print("\n📁 Veri bölünüyor (Train %70 / Val %15 / Test %15)...")
+split_dir, counts = split_dataset(DATA_DIR)
 
-# Veri sayısı
-for split, d in [('training', TRAIN_DIR), ('testing', TEST_DIR)]:
-    for cls in ['healthy', 'parkinson']:
-        p = os.path.join(d, cls)
-        n = len(os.listdir(p)) if os.path.exists(p) else 0
-        print(f"  {split}/{cls}: {n} görüntü")
+print("\n  Veri dağılımı:")
+for cls, c in counts.items():
+    print(f"  {cls}: Train={c['train']} | Val={c['val']} | Test={c['test']}")
+
+TRAIN_DIR = os.path.join(split_dir, 'training')
+VAL_DIR   = os.path.join(split_dir, 'validation')
+TEST_DIR  = os.path.join(split_dir, 'testing')
 
 # ── VERİ GENERATORLERİ ──
 train_aug = ImageDataGenerator(
     rescale=1./255,
-    rotation_range=25,
-    width_shift_range=0.15,
-    height_shift_range=0.15,
+    rotation_range=20,
+    width_shift_range=0.10,
+    height_shift_range=0.10,
     horizontal_flip=True,
     vertical_flip=True,
-    zoom_range=0.20,
+    zoom_range=0.15,
     shear_range=0.10,
-    brightness_range=[0.75, 1.25],
-    fill_mode='nearest',
-    validation_split=0.20
+    brightness_range=[0.8, 1.2],
+    fill_mode='nearest'
 )
+val_aug  = ImageDataGenerator(rescale=1./255)
 test_aug = ImageDataGenerator(rescale=1./255)
 
 train_gen = train_aug.flow_from_directory(
     TRAIN_DIR, target_size=IMG_SIZE, batch_size=BATCH,
-    class_mode='binary', subset='training', seed=42, shuffle=True)
+    class_mode='binary', seed=42, shuffle=True)
 
-val_gen = train_aug.flow_from_directory(
-    TRAIN_DIR, target_size=IMG_SIZE, batch_size=BATCH,
-    class_mode='binary', subset='validation', seed=42, shuffle=False)
+val_gen = val_aug.flow_from_directory(
+    VAL_DIR, target_size=IMG_SIZE, batch_size=BATCH,
+    class_mode='binary', shuffle=False)
 
 test_gen = test_aug.flow_from_directory(
     TEST_DIR, target_size=IMG_SIZE, batch_size=1,
@@ -110,11 +111,11 @@ x = base(inputs, training=False)
 x = layers.GlobalAveragePooling2D()(x)
 x = layers.Dense(256, activation='relu')(x)
 x = layers.BatchNormalization()(x)
-x = layers.Dropout(0.5)(x)
+x = layers.Dropout(0.4)(x)
 x = layers.Dense(64, activation='relu')(x)
-x = layers.Dropout(0.3)(x)
+x = layers.Dropout(0.2)(x)
 output = layers.Dense(1, activation='sigmoid')(x)
-model = tf.keras.Model(inputs, output, name="ParkinsonMobileNet_v2")
+model = tf.keras.Model(inputs, output, name="ParkinsonMobileNet_v3")
 
 # ── AŞAMA 1: Head eğitimi ──
 print("\n[AŞAMA 1] Head katmanları eğitiliyor...")
@@ -123,12 +124,12 @@ model.compile(
     loss='binary_crossentropy', metrics=['accuracy'])
 
 cb1 = [
-    callbacks.EarlyStopping(monitor='val_accuracy', patience=12,
+    callbacks.EarlyStopping(monitor='val_accuracy', patience=8,
                              restore_best_weights=True, mode='max', verbose=1),
     callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5,
-                                 patience=5, min_lr=1e-6, verbose=1),
+                                 patience=4, min_lr=1e-6, verbose=1),
 ]
-h1 = model.fit(train_gen, epochs=25, validation_data=val_gen,
+h1 = model.fit(train_gen, epochs=20, validation_data=val_gen,
                 callbacks=cb1, verbose=1)
 print(f"  En iyi val accuracy: {max(h1.history['val_accuracy'])*100:.2f}%")
 
@@ -143,14 +144,14 @@ model.compile(
     loss='binary_crossentropy', metrics=['accuracy'])
 
 cb2 = [
-    callbacks.EarlyStopping(monitor='val_accuracy', patience=20,
+    callbacks.EarlyStopping(monitor='val_accuracy', patience=15,
                              restore_best_weights=True, mode='max', verbose=1),
     callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.3,
-                                 patience=7, min_lr=1e-8, verbose=1),
+                                 patience=6, min_lr=1e-8, verbose=1),
     callbacks.ModelCheckpoint(MODEL_PATH, monitor='val_accuracy',
                                save_best_only=True, mode='max', verbose=1),
 ]
-h2 = model.fit(train_gen, epochs=80, validation_data=val_gen,
+h2 = model.fit(train_gen, epochs=50, validation_data=val_gen,
                 callbacks=cb2, verbose=1)
 best_val = max(h2.history['val_accuracy'])*100
 print(f"  En iyi val accuracy: {best_val:.2f}%")
@@ -158,9 +159,9 @@ print(f"  En iyi val accuracy: {best_val:.2f}%")
 # ── TEST ──
 print("\n[TEST DEĞERLENDİRMESİ]")
 test_gen.reset()
-preds   = model.predict(test_gen, verbose=0).flatten()
-y_pred  = (preds > 0.5).astype(int)
-y_true  = test_gen.classes
+preds    = model.predict(test_gen, verbose=0).flatten()
+y_pred   = (preds > 0.5).astype(int)
+y_true   = test_gen.classes
 y_scores = preds
 
 print(classification_report(y_true, y_pred, target_names=class_names))
@@ -209,7 +210,6 @@ axes[1].axvline(x=split_ep,color='#63b3ed',ls=':',lw=1.5)
 axes[1].set_title('Kayıp',color='#e6edf3',fontweight='bold')
 axes[1].set_xlabel('Epoch',color='#8b949e'); axes[1].set_ylabel('Loss',color='#8b949e')
 axes[1].legend(facecolor='#21262d',labelcolor='#e6edf3'); axes[1].grid(alpha=0.15)
-
 plt.tight_layout()
 plt.savefig('training_curves.png',dpi=150,bbox_inches='tight',facecolor='#0d1117')
 plt.close(); print("  ✓ training_curves.png")
@@ -218,7 +218,7 @@ fig,ax = plt.subplots(figsize=(6,5))
 fig.patch.set_facecolor('#0d1117'); ax.set_facecolor('#0d1117')
 sns.heatmap(cm,annot=True,fmt='d',cmap='Blues',
             xticklabels=class_names,yticklabels=class_names,
-            ax=ax,annot_kws={'size':18,'weight':'bold'},
+            ax=ax,annot_kws={'size':16,'weight':'bold'},
             linewidths=2,linecolor='#0d1117')
 ax.set_xlabel('Tahmin',fontsize=12,color='#e6edf3')
 ax.set_ylabel('Gerçek',fontsize=12,color='#e6edf3')
@@ -250,7 +250,8 @@ results = {
     "specificity": round(spec,4), "auc_roc": round(roc_v,4),
     "best_val_accuracy": round(best_val,2),
     "class_names": class_names,
-    "class_indices": train_gen.class_indices
+    "class_indices": train_gen.class_indices,
+    "dataset": "3264 görüntü (1632 Healthy + 1632 Parkinson)"
 }
 with open('model_results.json','w') as f:
     json.dump(results, f, indent=2)
