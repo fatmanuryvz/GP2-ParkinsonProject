@@ -121,6 +121,27 @@ header{padding:28px 0;border-bottom:1px solid var(--border);display:flex;align-i
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 footer{border-top:1px solid var(--border);padding:28px 0;margin-top:50px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:0.7rem}
 footer span{color:var(--accent)}
+/* SWITCH UI - Gelişmiş */
+.switch-container { background: linear-gradient(135deg, rgba(99,179,237,0.1), rgba(74,222,128,0.05)); border: 1px solid var(--accent); }
+.switch { position: relative; display: inline-block; width: 60px; height: 30px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background-color: #2a3448; transition: .4s; border-radius: 34px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
+.slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.4); }
+input:checked + .slider { background-color: var(--accent2); }
+input:checked + .slider:before { transform: translateX(30px); }
+.med-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+.insight-card.active { display: block; animation: fadeUp 0.5s ease both; }
+
+.report-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.report-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center; }
+.report-stat .stat-label { font-size: 0.65rem; color: var(--muted); margin-bottom: 8px; font-weight: 800; }
+.report-val { font-size: 1.8rem; font-weight: 700; font-family: var(--mono); }
+.report-diff { font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 99px; margin-top: 10px; display: inline-block; }
+.report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.8rem; }
+.report-table th { color: var(--muted); text-align: left; padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 0.65rem; text-transform: uppercase; }
+.report-table td { padding: 14px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 @media(max-width:900px){.main-grid{grid-template-columns:1fr}.stats-row{grid-template-columns:repeat(3,1fr)}.metric-grid{grid-template-columns:repeat(2,1fr)}.tremor-metrics{grid-template-columns:repeat(2,1fr)}}
@@ -167,6 +188,9 @@ footer span{color:var(--accent)}
     </button>
     <button class="main-tab" onclick="switchMainTab('tremor')">
       🤚 El Titremesi Analizi
+    </button>
+    <button class="main-tab" onclick="switchMainTab('report')">
+      📊 Gelişmiş Rapor
     </button>
   </div>
 
@@ -242,8 +266,8 @@ footer span{color:var(--accent)}
     <div class="main-grid">
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><div class="card-icon" style="background:rgba(251,146,60,0.15)">🤚</div>Gerçek Zamanlı El Titremesi</div>
-          <span style="font-family:var(--mono);font-size:0.65rem;color:var(--accent3)">MediaPipe</span>
+          <div class="card-title"><div class="card-icon" style="background:rgba(251,146,60,0.15)">🤚</div>Gerçek Zamanlı Titreme Analizi</div>
+          <span style="font-family:var(--mono);font-size:0.65rem;color:var(--accent3)">MediaPipe + FFT</span>
         </div>
         <div class="card-body">
           <div class="camera-container" id="cameraContainer">
@@ -253,6 +277,25 @@ footer span{color:var(--accent)}
               <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted)">Analiz başlat butonuna tıklayın</div>
             </div>
             <img id="cameraFeed" class="camera-feed" style="width:100%;height:100%;object-fit:cover;display:none" src="">
+          </div>
+
+          <!-- GELİŞMİŞ İLAÇ SEÇİCİ -->
+          <div class="switch-container" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; padding:16px; border-radius:14px;">
+            <div style="display:flex; align-items:center; gap:12px">
+              <span style="font-size:1.8rem">💊</span>
+              <div>
+                <div class="med-label" id="medLabelText" style="color:var(--muted)">İlaçsız Durum</div>
+                <div style="font-size:0.7rem; color:var(--muted)">Hangi durumu test ediyorsunuz?</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px">
+              <span style="font-size:0.6rem; color:var(--muted); font-weight:800">NORMAL</span>
+              <label class="switch">
+                <input type="checkbox" id="medToggle" onchange="updateMedLabel()">
+                <span class="slider round"></span>
+              </label>
+              <span style="font-size:0.6rem; color:var(--accent2); font-weight:800">İLAÇLI</span>
+            </div>
           </div>
 
           <div class="progress-bar-wrap" id="progressWrap" style="display:none">
@@ -269,9 +312,9 @@ footer span{color:var(--accent)}
             <div style="font-size:0.78rem;font-weight:700;margin-bottom:8px;color:var(--accent)">📋 Nasıl Kullanılır?</div>
             <div style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);line-height:1.9">
               1. "Analizi Başlat"a tıklayın<br>
-              2. Elinizi kameraya tutun (hareketsiz)<br>
-              3. 5 saniye boyunca bekleyin<br>
-              4. Sonuç otomatik çıkar
+              2. İşaret parmağınızı kameraya tutun (takip noktası çıkacaktır)<br>
+              3. 5 saniye boyunca elinizi sabit (dinlenme halinde) tutun<br>
+              4. FFT spektrumu ile gerçekçi sonuç hesaplanır
             </div>
           </div>
         </div>
@@ -324,6 +367,95 @@ footer span{color:var(--accent)}
             </div>
 
             <div class="disclaimer" style="margin-top:12px">⚠ Bu sonuç bir yapay zeka tahminidir. Kesin tanı için nöroloji uzmanına başvurunuz.</div>
+          </div>
+
+          <!-- İLAÇ ETKİ ANALİZİ (INSIGHT) -->
+          <div id="medInsight" class="insight-card">
+              <div style="font-size:0.9rem; font-weight:700; margin-bottom:4px; color:var(--accent2)" id="insightTitle">💊 İlaç Etki Analizi</div>
+              <div style="font-size:0.75rem; color:var(--text); line-height:1.4" id="insightDesc">Karşılaştırma için hem ilaçlı hem ilaçsız analiz yapmalısınız.</div>
+          </div>
+          
+          <!-- GEÇMİŞ LOGU -->
+          <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--muted); margin-bottom:12px; display:flex; justify-content:space-between">
+              <span>📜 GEÇMİŞ ANALİZLER</span>
+              <button onclick="clearHistory()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.6rem; font-family:var(--mono)">TEMİZLE [x]</button>
+            </div>
+            <div id="historyList" style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto">
+              <!-- Loglar buraya gelecek -->
+              <div style="text-align:center; font-size:0.65rem; color:var(--muted); padding:10px">Henüz geçmiş analiz yok</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- SEKME 3: GELİŞMİŞ RAPOR -->
+  <div class="main-tab-panel" id="panel-report">
+    <div class="card full-width">
+      <div class="card-header">
+        <div class="card-title"><div class="card-icon" style="background:rgba(99,179,237,0.15)">📊</div>İlaç Etki Karşılaştırma Raporu</div>
+      </div>
+      <div class="card-body">
+        <div id="reportEmpty" style="text-align:center; padding:60px 20px; color:var(--muted)">
+          <div style="font-size:3rem; margin-bottom:15px">📈</div>
+          <div>Karşılaştırmalı rapor için en az bir <b>İlaçlı</b> ve bir <b>İlaçsız</b> analiz yapmalısınız.</div>
+        </div>
+
+        <div id="reportContent" style="display:none">
+          <div class="report-grid">
+            <div class="report-stat">
+              <div class="stat-label">NORMAL (İLAÇSIZ) ORT.</div>
+              <div class="report-val" id="rep-normal" style="color:var(--muted)">—</div>
+              <div style="font-size:0.65rem; color:var(--muted); margin-top:4px">Parkinson Risk Skoru (%)</div>
+            </div>
+            <div class="report-stat" style="border-color:var(--accent2)">
+              <div class="stat-label" style="color:var(--accent2)">İLAÇLI ORTALAMA</div>
+              <div class="report-val" id="rep-med" style="color:var(--accent2)">—</div>
+              <div id="rep-diff" class="report-diff">—</div>
+            </div>
+          </div>
+
+          <div style="margin-top:30px">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--muted); margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:8px">📋 DETAYLI VERİ KIYASLAMASI</div>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Metrik</th>
+                  <th>İlaçsız (Normal)</th>
+                  <th>İlaçlı (Tedavi)</th>
+                  <th>Değişim</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Ortalama Frekans (Hz)</td>
+                  <td id="rt-freq-n">—</td>
+                  <td id="rt-freq-m">—</td>
+                  <td id="rt-freq-d">—</td>
+                </tr>
+                <tr>
+                  <td>Ortalama Amplitüd (px)</td>
+                  <td id="rt-amp-n">—</td>
+                  <td id="rt-amp-m">—</td>
+                  <td id="rt-amp-d">—</td>
+                </tr>
+                <tr>
+                  <td>En Düşük Risk Skoru (%)</td>
+                  <td id="rt-score-n">—</td>
+                  <td id="rt-score-m">—</td>
+                  <td id="rt-score-d">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:30px; padding:20px; background:rgba(74,222,128,0.05); border:1px solid rgba(74,222,128,0.2); border-radius:12px">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--accent2); margin-bottom:10px">👨‍⚕️ Doktor İçin Otomatik Not</div>
+            <p id="dr-note" style="font-size:0.8rem; color:var(--text); line-height:1.6; font-style:italic">Veriler analiz ediliyor...</p>
           </div>
         </div>
       </div>
@@ -393,14 +525,18 @@ async function loadMetrics() {
 
 // ── Ana Sekme ──
 function switchMainTab(id) {
-  document.querySelectorAll(".main-tab").forEach((b,i)=>{
-    b.classList.toggle("active",["drawing","tremor"][i]===id);
+  document.querySelectorAll(".main-tab").forEach(b=>{
+    const tabId = b.getAttribute("onclick").match(/'(.*?)'/)[1];
+    b.classList.toggle("active", tabId === id);
   });
   document.querySelectorAll(".main-tab-panel").forEach(p=>p.classList.remove("active"));
   document.getElementById("panel-"+id).classList.add("active");
 
   if(id==="tremor") {
-    startCamera();  // Her sekme degisiminde yenile
+    startCamera();
+  }
+  if(id==="report") {
+    renderAdvancedReport();
   }
 }
 
@@ -434,10 +570,22 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 });
 
+function updateMedLabel() {
+  const isChecked = document.getElementById("medToggle").checked;
+  const label = document.getElementById("medLabelText");
+  label.textContent = isChecked ? "İlaçlı Durum (Analiz)" : "İlaçsız Durum (Normal)";
+  label.style.color = isChecked ? "var(--accent2)" : "var(--muted)";
+}
+
 // ── Titreme Analizi ──
 async function startTremor() {
+  const medStatus = document.getElementById("medToggle").checked;
   try {
-    await fetch(API+"/tremor/start",{method:"POST"});
+    await fetch(API+"/tremor/start",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({medication: medStatus})
+    });
     document.getElementById("startBtn").disabled = true;
     document.getElementById("stopBtn").disabled  = false;
     document.getElementById("progressWrap").style.display = "block";
@@ -492,11 +640,17 @@ function showTremorResult(r) {
 
   document.getElementById("tremorLabel").textContent = `Titreme Şiddeti: ${r.severity.toUpperCase()}`;
   document.getElementById("tremorLabel").style.color = r.color;
-  document.getElementById("tremorRisk").textContent  = `Risk Seviyesi: ${r.risk} • Parkinson Riski: %${r.risk_score}`;
+  
+  const medIcon = r.medication ? "💊 İlaçlı" : "❌ İlaçsız";
+  document.getElementById("tremorRisk").textContent  = `${medIcon} • Risk Seviyesi: ${r.risk} • Parkinson Riski: %${r.risk_score}`;
+  
   document.getElementById("scoreVal").textContent    = "%"+r.risk_score;
   document.getElementById("scoreVal").style.color    = r.color;
   document.getElementById("t-amp").textContent  = r.amplitude;
   document.getElementById("t-freq").textContent = r.frequency+" Hz";
+  if(r.is_parkinson_freq) {
+      document.getElementById("t-freq").innerHTML += ' <span style="font-size:0.6rem;background:rgba(248,113,113,0.2);padding:2px 4px;border-radius:4px;color:var(--danger)">⚠ KRİTİK ARALIK</span>';
+  }
   document.getElementById("t-dur").textContent  = r.duration;
 
   // Ring animasyonu
@@ -504,6 +658,138 @@ function showTremorResult(r) {
   circle.style.stroke = r.color;
   const offset = 239 - (r.risk_score/100)*239;
   setTimeout(()=>{ circle.style.strokeDashoffset = offset; }, 100);
+
+  saveToHistory(r);
+  calculateInsight();
+}
+
+// ── Geçmiş Yönetimi ──
+function saveToHistory(r) {
+    let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
+    const item = {
+        date: new Date().toLocaleTimeString(),
+        med: r.medication,
+        score: r.risk_score,
+        freq: r.frequency,
+        amp: r.amplitude, // Genlik bilgisini rapora ekliyoruz
+        color: r.color
+    };
+    history.unshift(item);
+    if(history.length > 10) history.pop();
+    localStorage.setItem("neuroscan_history", JSON.stringify(history));
+    renderHistory();
+}
+
+function renderHistory() {
+    const list = document.getElementById("historyList");
+    let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
+    if(history.length === 0) {
+        list.innerHTML = '<div style="text-align:center; font-size:0.65rem; color:var(--muted); padding:10px">Henüz geçmiş analiz yok</div>';
+        return;
+    }
+    list.innerHTML = history.map(h => `
+        <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; animation:fadeUp 0.3s ease both">
+            <div style="display:flex; align-items:center; gap:8px">
+                <span style="font-family:var(--mono); font-size:0.65rem; color:var(--muted)">${h.date}</span>
+                <span style="font-size:0.7rem">${h.med ? '💊' : '❌'}</span>
+                <span style="font-weight:700; font-size:0.8rem; color:${h.color}">%${h.score}</span>
+            </div>
+            <span style="font-family:var(--mono); font-size:0.65rem; color:var(--accent)">${h.freq} Hz</span>
+        </div>
+    `).join('');
+}
+
+function clearHistory() {
+    localStorage.removeItem("neuroscan_history");
+    renderHistory();
+    document.getElementById("medInsight").classList.remove("active");
+}
+
+function calculateInsight() {
+    let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
+    let medScores = history.filter(h => h.med).map(h => h.score);
+    let normalScores = history.filter(h => !h.med).map(h => h.score);
+
+    const insightCard = document.getElementById("medInsight");
+    const title = document.getElementById("insightTitle");
+    const desc = document.getElementById("insightDesc");
+
+    if(medScores.length > 0 && normalScores.length > 0) {
+        let avgMed = medScores.reduce((a,b)=>a+b, 0) / medScores.length;
+        let avgNormal = normalScores.reduce((a,b)=>a+b, 0) / normalScores.length;
+        let diff = avgNormal - avgMed;
+
+        insightCard.classList.add("active");
+        if(diff > 5) {
+            title.textContent = "✅ İlaç Etkisi Olumlu";
+            title.style.color = "var(--accent2)";
+            desc.textContent = `İlaçlı ölçümleriniz, normale göre %${Math.round((diff/avgNormal)*100)} daha düşük titreme gösteriyor. Tedaviniz etkili görünüyor.`;
+        } else if(Math.abs(diff) <= 5) {
+            title.textContent = "📊 Benzer Sonuçlar";
+            title.style.color = "var(--accent)";
+            desc.textContent = "İlaçlı ve ilaçsız ölçümleriniz arasında belirgin bir fark saptanmadı. Doktorunuzla bu durumu paylaşabilirsiniz.";
+        } else {
+            title.textContent = "⚠️ Dikkat Çekici Fark";
+            title.style.color = "var(--accent3)";
+            desc.textContent = "İlaçlı ölçümlerde titreme seviyesi daha yüksek çıktı. Bu durum yorgunluk veya stres kaynaklı olabilir.";
+        }
+    }
+}
+
+function renderAdvancedReport() {
+    let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
+    let meds = history.filter(h => h.med);
+    let normals = history.filter(h => !h.med);
+
+    const empty = document.getElementById("reportEmpty");
+    const content = document.getElementById("reportContent");
+
+    if(meds.length === 0 || normals.length === 0) {
+        empty.style.display = "block";
+        content.style.display = "none";
+        return;
+    }
+
+    empty.style.display = "none";
+    content.style.display = "block";
+
+    const avg = arr => arr.reduce((a,b)=>a+b,0) / arr.length;
+    
+    let aM = avg(meds.map(h=>h.score));
+    let aN = avg(normals.map(h=>h.score));
+    let diff = aN - aM;
+
+    document.getElementById("rep-normal").textContent = "%" + aN.toFixed(1);
+    document.getElementById("rep-med").textContent = "%" + aM.toFixed(1);
+    
+    const diffEl = document.getElementById("rep-diff");
+    if(diff > 0) {
+        diffEl.textContent = `TITREME %${Math.round((diff/aN)*100)} AZALDI`;
+        diffEl.style.background = "var(--accent2)";
+        diffEl.style.color = "#0a1a0a";
+    } else {
+        diffEl.textContent = "BELIRGIN FARK YOK";
+        diffEl.style.background = "var(--surface2)";
+        diffEl.style.color = "var(--muted)";
+    }
+
+    // Table
+    document.getElementById("rt-freq-n").textContent = avg(normals.map(h=>h.freq)).toFixed(2) + " Hz";
+    document.getElementById("rt-freq-m").textContent = avg(meds.map(h=>h.freq)).toFixed(2) + " Hz";
+    document.getElementById("rt-amp-n").textContent = avg(normals.map(h=>h.amp || 0)).toFixed(1) + " px";
+    document.getElementById("rt-amp-m").textContent = avg(meds.map(h=>h.amp || 0)).toFixed(1) + " px";
+    document.getElementById("rt-score-n").textContent = "%" + Math.min(...normals.map(h=>h.score)).toFixed(1);
+    document.getElementById("rt-score-m").textContent = "%" + Math.min(...meds.map(h=>h.score)).toFixed(1);
+
+    // Doctor Note
+    const note = document.getElementById("dr-note");
+    if(diff > 15) {
+        note.textContent = `"Hasta, ilaç tedavisine pozitif yanıt veriyor. İlaçlı ölçümlerde titreme şiddetinde %15'in üzerinde anlamlı bir azalma gözlemlenmiştir. Mevcut dozaj etkili görünmektedir."`;
+    } else if(diff > 5) {
+        note.textContent = `"İlaç sonrası hafif bir iyileşme gözlemlense de titreme frekansı hala kritik aralıkta seyrediyor. İlacın tam etki saati veya dozajı gözden geçirilebilir."`;
+    } else {
+        note.textContent = `"İlaçlı ve ilaçsız ölçümler arasında istatistiksel olarak anlamlı bir fark saptanmamıştır. İlacın biyoyararlanımı veya hastanın direnç durumu klinik olarak değerlendirilmelidir."`;
+    }
 }
 
 // ── Çizim Upload ──

@@ -17,6 +17,18 @@ import tensorflow as tf
 tf.random.set_seed(42)
 np.random.seed(42)
 import cv2
+import mediapipe as mp
+# MediaPipe 'solutions' bazı ortamlarda eksik olabildiği için fallback ekliyoruz
+try:
+    from mediapipe.solutions import hands as mp_hands
+    from mediapipe.solutions import drawing_utils as mp_draw
+    MP_AVAILABLE = True
+except (ImportError, AttributeError):
+    MP_AVAILABLE = False
+    print("WARNING: MediaPipe 'solutions' not found. Falling back to HSV tracking.")
+
+from scipy.signal import butter, lfilter
+from scipy.fft import fft, fftfreq
 
 app = Flask(__name__, static_folder='.')
 CORS(app)
@@ -39,6 +51,20 @@ if os.path.exists("model_results.json"):
         d = json.load(f)
     if "class_indices" in d:
         class_indices = d["class_indices"]
+
+# ── MEDIAPIPE HAZIRLIK ──
+hands = None
+if MP_AVAILABLE:
+    try:
+        hands = mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=1,
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.7
+        )
+    except Exception as e:
+        print(f"MediaPipe initialization error: {e}")
+        MP_AVAILABLE = False
 
 # ── KAMERA THREAD ──
 class CameraThread:
@@ -79,7 +105,13 @@ camera.start()
 time.sleep(2)  # Kamera isinsin
 
 # Titreme state
-tremor_state = {"active":False,"positions":[],"timestamps":[],"result":None}
+tremor_state = {
+    "active": False,
+    "positions": [],
+    "timestamps": [],
+    "result": None,
+    "medication": False # İlaç durumu
+}
 tremor_lock  = threading.Lock()
 
 def preprocess(image_bytes):
@@ -89,52 +121,112 @@ def preprocess(image_bytes):
     return np.expand_dims(arr, axis=0)
 
 def analyze_tremor(positions, timestamps):
-    if len(positions) < 15:
+    if len(positions) < 30: # 15 yerine en az 2 saniyelik veri
         return None
+    
     positions  = np.array(positions)
     timestamps = np.array(timestamps)
-    amplitude  = float(np.std(positions[:,0]) + np.std(positions[:,1]))
-    centered   = positions[:,0] - np.mean(positions[:,0])
-    zc         = np.sum(np.diff(np.sign(centered)) != 0)
     duration   = max(timestamps[-1] - timestamps[0], 0.1)
-    frequency  = float(zc / (2 * duration))
-    if amplitude > 8 and frequency >= 3.5:
-        sev="siddetli"; risk="yuksek"; score=min(95,60+amplitude*1.5+frequency*3); col="#f87171"
-    elif amplitude > 4 and frequency >= 2.5:
-        sev="hafif-orta"; risk="orta"; score=min(75,35+amplitude*2+frequency*2); col="#fb923c"
-    elif amplitude > 2:
-        sev="hafif"; risk="dusuk"; score=min(40,15+amplitude*3); col="#facc15"
+    fs         = len(positions) / duration  # Örnekleme hızı (FPS)
+    
+    # Sinyali merkezle (DC bileşenini çıkar)
+    # Kritik: X ve Y eksenlerindeki hareketlerin bileşkesi üzerinden gidelim
+    # Hareketin hızındaki değişimlere odaklanmak titremeyi daha iyi yakalar
+    x = positions[:, 0] - np.mean(positions[:, 0])
+    y = positions[:, 1] - np.mean(positions[:, 1])
+    
+    # ── BANDPASS FILTRE (2Hz - 12Hz) ──
+    def bandpass_filter(data, lowcut, highcut, fs, order=3):
+        nyq = 0.5 * fs
+        low = lowcut / nyq
+        high = highcut / nyq
+        # Nyquist sınırı kontrolü (örnekleme hızı düşükse yüksek kesimi daralt)
+        if high >= 1.0: high = 0.95
+        b, a = butter(order, [low, high], btype='band')
+        return lfilter(b, a, data)
+
+    try:
+        x_filt = bandpass_filter(x, 2.0, 12.0, fs)
+        y_filt = bandpass_filter(y, 2.0, 12.0, fs)
+    except:
+        x_filt = x; y_filt = y
+
+    # ── FFT (FREKANS ANALİZİ) ──
+    N = len(x_filt)
+    yf = fft(x_filt)
+    xf = fftfreq(N, 1 / fs)
+    
+    # Pozitif frekansları al ve 2-12Hz arasını seç
+    pos_mask = (xf > 0) & (xf < 12)
+    xf_pos = xf[pos_mask]
+    yf_pos = np.abs(yf[pos_mask])
+    
+    if len(xf_pos) > 0:
+        peak_idx = np.argmax(yf_pos)
+        frequency = float(xf_pos[peak_idx])
     else:
-        sev="normal"; risk="cok dusuk"; score=min(15,amplitude*3); col="#4ade80"
+        frequency = 0.0
+
+    # Amplitüd: Filtrelenmiş sinyalin standart sapması (yoğunluk)
+    amplitude = float(np.std(x_filt) + np.std(y_filt))
+    
+    # Parkinson Kriterleri: 4-6 Hz arası ritmik titremeler tipiktir
+    is_parkinson_range = 3.5 <= frequency <= 6.5
+    
+    if amplitude > 10 and is_parkinson_range:
+        sev="şiddetli"; risk="yüksek"; score=min(98, 70 + amplitude*1.5 + (6-abs(frequency-5))*5); col="#f87171"
+    elif amplitude > 6 and is_parkinson_range:
+        sev="orta"; risk="orta-yüksek"; score=min(85, 50 + amplitude*2); col="#fb923c"
+    elif amplitude > 3:
+        if is_parkinson_range:
+            sev="hafif"; risk="orta"; score=min(60, 30 + amplitude*3); col="#fbbf24"
+        else:
+            sev="hafif (atipik)"; risk="düşük"; score=min(35, 10 + amplitude*2); col="#facc15"
+    else:
+        sev="normal"; risk="çok düşük"; score=min(15, amplitude*4); col="#4ade80"
+        
     return {"amplitude":round(amplitude,2),"frequency":round(frequency,2),
             "severity":sev,"risk":risk,"risk_score":round(score,1),
-            "color":col,"duration":round(duration,1),"sample_count":len(positions)}
+            "color":col,"duration":round(duration,1),"sample_count":len(positions),
+            "is_parkinson_freq": is_parkinson_range}
 
 def detect_hand(frame):
-    h, w = frame.shape[:2]
+    # ── YÖNTEM 1: MEDIAPIPE (Varsayılan) ──
+    if MP_AVAILABLE and hands:
+        try:
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = hands.process(frame_rgb)
+            if results.multi_hand_landmarks:
+                hand_lms = results.multi_hand_landmarks[0]
+                itip = hand_lms.landmark[8] # İşaret parmağı ucu
+                h, w, _ = frame.shape
+                cx, cy = int(itip.x * w), int(itip.y * h)
+                mp_draw.draw_landmarks(frame, hand_lms, mp_hands.HAND_CONNECTIONS)
+                cv2.circle(frame, (cx,cy), 10, (99,179,237), 2)
+                return cx, cy
+        except:
+            pass
+
+    # ── YÖNTEM 2: HSV RENK TAKİBİ (Fallback) ──
     hsv    = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     lower  = np.array([0,  30,  60], dtype=np.uint8)
     upper  = np.array([25, 255, 255], dtype=np.uint8)
     mask   = cv2.inRange(hsv, lower, upper)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
     mask   = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    mask   = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  kernel)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
-        return None, None
-    largest = max(contours, key=cv2.contourArea)
-    area    = cv2.contourArea(largest)
-    if area < 1500 or area > 25000:
-        return None, None
-    M = cv2.moments(largest)
-    if M["m00"] == 0:
-        return None, None
-    cx = int(M["m10"] / M["m00"])
-    cy = int(M["m01"] / M["m00"])
-    cv2.drawContours(frame, [largest], -1, (74,222,128), 2)
-    cv2.circle(frame, (cx,cy), 8, (99,179,237), -1)
-    cv2.circle(frame, (cx,cy), 12, (255,255,255), 2)
-    return cx, cy
+    
+    if contours:
+        largest = max(contours, key=cv2.contourArea)
+        if cv2.contourArea(largest) > 1000:
+            M = cv2.moments(largest)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                cv2.drawContours(frame, [largest], -1, (74,222,128), 2)
+                cv2.circle(frame, (cx,cy), 8, (99,179,237), -1)
+                return cx, cy
+    return None, None
 
 def generate_frames():
     while True:
@@ -229,9 +321,17 @@ def video_feed():
 
 @app.route("/tremor/start", methods=["POST"])
 def tremor_start():
+    data = request.json or {}
+    med_status = data.get("medication", False)
     with tremor_lock:
-        tremor_state.update({"active":True,"positions":[],"timestamps":[],"result":None})
-    return jsonify({"status":"started"})
+        tremor_state.update({
+            "active": True,
+            "positions": [],
+            "timestamps": [],
+            "result": None,
+            "medication": med_status
+        })
+    return jsonify({"status":"started", "medication": med_status})
 
 @app.route("/tremor/stop", methods=["POST"])
 def tremor_stop():
@@ -239,7 +339,10 @@ def tremor_stop():
         tremor_state["active"] = False
         pos = tremor_state["positions"].copy()
         ts  = tremor_state["timestamps"].copy()
+        med = tremor_state["medication"]
     result = analyze_tremor(pos, ts)
+    if result:
+        result["medication"] = med
     with tremor_lock:
         tremor_state["result"] = result
     return jsonify({"status":"stopped","result":result})
@@ -249,9 +352,16 @@ def tremor_result():
     with tremor_lock:
         active  = tremor_state["active"]
         result  = tremor_state["result"]
+        med     = tremor_state["medication"]
         count   = len(tremor_state["positions"])
         elapsed = tremor_state["timestamps"][-1]-tremor_state["timestamps"][0] if count>1 else 0
-    return jsonify({"active":active,"result":result,"count":count,"elapsed":round(elapsed,1)})
+    return jsonify({
+        "active": active,
+        "result": result,
+        "medication": med,
+        "count": count,
+        "elapsed": round(elapsed, 1)
+    })
 
 @app.route("/metrics")
 def metrics():
