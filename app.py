@@ -81,15 +81,23 @@ class CameraThread:
         print("  ✓ Kamera thread baslatildi")
 
     def _read_loop(self):
-        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
-        self.cap.set(cv2.CAP_PROP_FPS, 15)
+        valid_cap = None
+        for i in range(3):
+            cap = cv2.VideoCapture(i)
+            if cap.isOpened():
+                valid_cap = cap
+                print(f"  ✓ Kamera index {i} bulundu.")
+                break
+        
+        self.cap = valid_cap if valid_cap is not None else cv2.VideoCapture(0)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         time.sleep(1.0)
-        print(f"  Kamera acildi: {self.cap.isOpened()}")
+        print(f"  Kamera durumu: {self.cap.isOpened()}")
+        
         while self.running:
             ret, frame = self.cap.read()
-            if ret:
+            if ret and frame is not None:
                 frame = cv2.flip(frame, 1)
                 with self.lock:
                     self.frame = frame.copy()
