@@ -80,20 +80,44 @@ class CameraThread:
         with self.lock:
             if self.running: return True
             
-            self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-            if not self.cap.isOpened():
-                print("  [ERROR] Kamera acilamadi!")
-                return False
+            # Robust Camera Detection (Indices 0, 1, 2)
+            valid_cap = None
+            for i in range(4): # Try one more index
+                try:
+                    print(f"  [DEBUG] Kamera index {i} deneniyor...", flush=True)
+                    cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
+                    if cap.isOpened():
+                        valid_cap = cap
+                        print(f"  [OK] Kamera index {i} bulundu.", flush=True)
+                        break
+                    else:
+                        cap.release()
+                except Exception as e:
+                    print(f"  [DEBUG] Index {i} hatasi: {str(e)}", flush=True)
+            
+            if not valid_cap or not valid_cap.isOpened():
+                print("  [DEBUG] DSHOW başarısız, normal mod deneniyor...", flush=True)
+                try:
+                    valid_cap = cv2.VideoCapture(0)
+                except Exception as e:
+                    print(f"  [DEBUG] Fallback hatasi: {str(e)}", flush=True)
                 
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
-            self.cap.set(cv2.CAP_PROP_FPS, 15)
+            if not valid_cap or not valid_cap.isOpened():
+                print("  [ERROR] Kamera acilamadi!", flush=True)
+                return False
+
+                
+            self.cap = valid_cap
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            self.cap.set(cv2.CAP_PROP_FPS, 20)
             
             self.running = True
             self.thread = threading.Thread(target=self._read_loop, daemon=True)
             self.thread.start()
             print("  [OK] Kamera donanimi aktif")
             return True
+
 
     def stop(self):
         with self.lock:
@@ -107,23 +131,11 @@ class CameraThread:
         print("  [OK] Kamera donanimi kapatildi")
 
     def _read_loop(self):
-<<<<<<< HEAD
-        valid_cap = None
-        for i in range(3):
-            cap = cv2.VideoCapture(i)
-            if cap.isOpened():
-                valid_cap = cap
-                print(f"  ✓ Kamera index {i} bulundu.")
-                break
-        
-        self.cap = valid_cap if valid_cap is not None else cv2.VideoCapture(0)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        time.sleep(1.0)
-        print(f"  Kamera durumu: {self.cap.isOpened()}")
-        
-=======
->>>>>>> c9d17d7 (Analizler Güncellendi!)
+        # Camera is now initialized in start()
+        time.sleep(1.0) # Give camera time to warm up
+        print(f"  Kamera okuma döngüsü başladı. Durum: {self.cap.isOpened()}")
+
+
         while self.running:
             ret, frame = self.cap.read()
             if ret and frame is not None:
@@ -152,6 +164,12 @@ tremor_state = {
 }
 tremor_lock  = threading.Lock()
 
+# ── SEANS BELLEĞİ (ON/OFF KIYASLAMASI İÇİN) ──
+session_data = {
+    "tremor": {"none": None, "med": None},
+    "tapping": {"none": None, "med": None}
+}
+
 # Bradikinezi (Finger Tapping) state
 tapping_state = {
     "active": False,
@@ -159,11 +177,13 @@ tapping_state = {
     "timestamps": [],
     "result": None,
     "medication": False,
-    "current_dist": 0.0 # Canlı sinyal için
+    "current_dist": 0.0 
 }
 tapping_lock = threading.Lock()
 
 class BradikineziaAnalyzer:
+
+
     def __init__(self, fps=20):
         self.fps = fps
     
@@ -191,7 +211,9 @@ class BradikineziaAnalyzer:
         # ── YÜKSEK HASSASİYETLİ TEPE TESPİTİ (PROMINENCE) ──
         # d_filt zaten (dist / hand_size) birimindedir.
         # Belirginlik (Prominence) 0.08: Çevresinden el boyunun %8'i kadar yükselen her dalgayı vuruş sayar.
-        peaks, properties = find_peaks(d_filt, prominence=0.08, distance=int(fs * 0.1))
+        # distance parametresi çökmemesi için en az 1 olmalıdır.
+        peaks, properties = find_peaks(d_filt, prominence=0.08, distance=max(1, int(fs * 0.1)))
+
         
         if len(peaks) < 3:
             # Sinyal kalitesi kontrolü
@@ -201,26 +223,36 @@ class BradikineziaAnalyzer:
             return None
 
         # Metrik 1: Vuruş hızı (taps/sn)
+
         tap_rate = len(peaks) / duration
         
-        # Metrik 2: Amplitüd azalması (Prominences üzerinden Trend)
-        # Prominences, vuruşun mutlak yüksekliğinden ziyade "ne kadar açılıp kapandığını" söyler.
+        # Metrik 2: Amplitüd Azalması (Windowed Decay)
+        # Sadece lineer regresyon yerine, ilk 3 vuruş ile son 3 vuruşun ortalamasını kıyaslıyoruz.
+        # Bu yöntem MDS-UPDRS'teki "progressive fatigue" mantığına daha uygundur.
         prominences = properties['prominences']
-        x_idx = np.arange(len(prominences))
-        slope, intercept = np.polyfit(x_idx, prominences, 1)
-        
-        # Toplam kayıp tahmini (İlk vuruşun belirginliğine göre)
-        # intercept burada ilk vuruşun beklenen belirginliğidir.
-        total_decay = -slope * len(peaks) / (intercept + 1e-6)
-        amp_decay = max(0.0, float(total_decay))
+        if len(prominences) >= 4:
+            first_avg = np.mean(prominences[:3])
+            last_avg  = np.mean(prominences[-3:])
+            amp_decay = 1.0 - (last_avg / (first_avg + 1e-6))
+            amp_decay = max(0.0, float(amp_decay))
+        else:
+            amp_decay = 0.0
             
         # Metrik 3: Ritim Değişkenliği (CoV)
         intervals = np.diff(t[peaks])
         cov = np.std(intervals) / (np.mean(intervals) + 1e-6)
             
-        # MDS-UPDRS Puanlama
+        # MDS-UPDRS Puanlama (Klinik Standartlar)
         score = self._compute_updrs(tap_rate, amp_decay, cov)
         
+        # Sonucu Seans Belleğine Kaydet
+        m_key = "med" if tapping_state["medication"] else "none"
+        session_data["tapping"][m_key] = {
+            "rate": tap_rate,
+            "decay": amp_decay,
+            "score": score
+        }
+
         # Renk ve Şiddet
         severities = {
             4: ("şiddetli", "#f87171"),
@@ -232,11 +264,11 @@ class BradikineziaAnalyzer:
         sev, col = severities.get(score, ("normal", "#4ade80"))
             
         recommendations = {
-            0: "Vuruş hızı ve genliği normal sınırlarda. (MDS-UPDRS Sınıf 0: Normal)",
-            1: "Hafif yavaşlama veya genlik azalması saptandı. (MDS-UPDRS Sınıf 1: Hafif)",
-            2: "Belirgin yorulma ve vuruş genliğinde daralma. (MDS-UPDRS Sınıf 2: Orta)",
-            3: "Ciddi hız kaybı ve vuruş sönümlenmesi. (MDS-UPDRS Sınıf 3: Belirgin)",
-            4: "Vuruş düzeni sürdürülemiyor. (MDS-UPDRS Sınıf 4: Şiddetli)"
+            0: "Vuruş hızı ve genliği normal sınırlarda. Klinik bulgu saptanmadı.",
+            1: "Hafif hız kaybı veya yorulma saptandı. Erken evre bulgusu olabilir.",
+            2: "Belirgin yorulma ve vuruş genliğinde daralma (MDS-UPDRS 2).",
+            3: "Ciddi bradikinezi bulguları. Vuruşlar arasında duraksamalar gözleniyor.",
+            4: "Vuruş düzeni sürdürülemiyor, ileri derece hareket kısıtlılığı."
         }
         
         return {
@@ -253,33 +285,34 @@ class BradikineziaAnalyzer:
         }
     
     def _compute_updrs(self, rate, decay, cov):
-        # MDS-UPDRS Part III Item 3.4 (Finger Tapping) Standartlarına Göre Puanlama
         # 0: Normal, 1: Hafif, 2: Orta, 3: Belirgin, 4: Şiddetli
+
         
-        # Hız (Speed)
-        if rate < 1.0: s1 = 4
-        elif rate < 1.5: s1 = 3
-        elif rate < 2.2: s1 = 2
-        elif rate < 3.2: s1 = 1
+        # Hız (Speed) - MDS-UPDRS Benchmarkları
+        if rate < 1.2: s1 = 4
+        elif rate < 1.8: s1 = 3
+        elif rate < 2.5: s1 = 2
+        elif rate < 3.5: s1 = 1
         else: s1 = 0
         
         # Genlik Kaybı (Amplitude Decrement)
-        if decay > 0.55: s2 = 4
+        if decay > 0.60: s2 = 4
         elif decay > 0.40: s2 = 3
         elif decay > 0.25: s2 = 2
-        elif decay > 0.12: s2 = 1
+        elif decay > 0.10: s2 = 1
         else: s2 = 0
         
         # Ritim (Rhythm)
         if cov > 0.50: s3 = 4
         elif cov > 0.35: s3 = 3
-        elif cov > 0.22: s3 = 2
-        elif cov > 0.12: s3 = 1
+        elif cov > 0.20: s3 = 2
+        elif cov > 0.10: s3 = 1
         else: s3 = 0
         
-        # Klinik ağırlıklı ortalama (Hız ve Genlik %90 baskındır)
-        final_score = round((s1 * 0.45) + (s2 * 0.45) + (s3 * 0.10))
+        # Klinik ağırlıklı ortalama
+        final_score = round((s1 * 0.40) + (s2 * 0.50) + (s3 * 0.10))
         return min(4, final_score)
+
 
 tapping_analyzer = BradikineziaAnalyzer(fps=20)
 
@@ -343,18 +376,24 @@ def analyze_tremor(positions, timestamps, hand_sizes):
     is_parkinson_freq = 3.5 <= frequency <= 7.5
     
     # MDS-UPDRS Uyumlu Puanlama (Normalleştirilmiş Genlik Üzerinden)
-    # 0: < 2% , 1: 2-5%, 2: 5-10%, 3: 10-20%, 4: > 20%
-    if norm_amplitude_pct < 2.5: score = 0
-    elif norm_amplitude_pct < 6.0: score = 1
-    elif norm_amplitude_pct < 12.0: score = 2
-    elif norm_amplitude_pct < 25.0: score = 3
+    if norm_amplitude_pct < 1.0: score = 0
+    elif norm_amplitude_pct < 3.5: score = 1
+    elif norm_amplitude_pct < 10.0: score = 2
+    elif norm_amplitude_pct < 20.0: score = 3
     else: score = 4
     
+    # Seans Belleğine Kaydet
+    m_key = "med" if tremor_state["medication"] else "none"
+    session_data["tremor"][m_key] = {
+        "freq": frequency,
+        "amp": norm_amplitude_pct,
+        "score": score
+    }
+
     # Risk Puanı (Frekans ağırlıklı)
-    # Eğer frekans Parkinson bandındaysa risk puanı katlanır
     risk_factor = 1.0
     if is_parkinson_freq:
-        risk_factor = 1.5 if frequency < 6.5 else 1.2
+        risk_factor = 1.8 if frequency < 6.0 else 1.4
         
     risk_score = min(100.0, score * 25.0 * risk_factor)
     
@@ -369,20 +408,20 @@ def analyze_tremor(positions, timestamps, hand_sizes):
     
     # Klinik Öneri
     if score >= 3 and is_parkinson_freq:
-        rec = "Kritik frekans bandında şiddetli titreme. En kısa sürede uzman hekim değerlendirmesi önerilir."
+        rec = "Kritik frekans bandında (Parkinsonian) şiddetli titreme. Klinik takip şarttır."
     elif is_parkinson_freq and score >= 1:
-        rec = "Parkinson ile uyumlu frekans aralığında titreme aktivitesi saptandı. Takip önerilir."
-    elif score >= 2:
-        rec = "Belirgin titreme saptandı ancak frekans atipik (Fizyolojik titreme olasılığı)."
+        rec = "Parkinson ile uyumlu düşük frekanslı ritmik titreme aktivitesi saptandı."
+    elif score >= 1:
+        rec = f"Düşük amplitüdlü {frequency} Hz titreme saptandı (Fizyolojik olasılığı yüksek)."
     else:
-        rec = "Titreme seviyesi normal/fizyolojik sınırlarda."
+        rec = "Titreme aktivitesi klinik sınırların altında."
         
     return {
         "amplitude": round(raw_amplitude, 1),
         "norm_amp_pct": round(norm_amplitude_pct, 1),
         "frequency": round(frequency, 2),
         "severity": sev,
-        "risk": "Yüksek" if risk_score > 60 else "Orta" if risk_score > 30 else "Düşük",
+        "risk": "Kritik" if risk_score > 75 else "Yüksek" if risk_score > 50 else "Düşük",
         "risk_score": round(risk_score, 1),
         "color": col,
         "recommendation": rec,
@@ -390,6 +429,7 @@ def analyze_tremor(positions, timestamps, hand_sizes):
         "is_parkinson_freq": is_parkinson_freq,
         "updrs_score": score
     }
+
 
 def get_landmarks(frame):
     if not MP_AVAILABLE: return None
@@ -612,8 +652,11 @@ def predict():
 
 @app.route("/camera/open", methods=["POST"])
 def camera_open():
+    print("[API] /camera/open isteği geldi", flush=True)
     success = camera.start()
+    print(f"[API] /camera/open sonucu: {success}", flush=True)
     return jsonify({"status": "opened" if success else "failed"})
+
 
 @app.route("/camera/close", methods=["POST"])
 def camera_close():
@@ -723,6 +766,49 @@ def metrics():
 @app.route("/health")
 def health():
     return jsonify({"status":"ok","model":MODEL_PATH})
+
+@app.route("/report/clinical")
+def get_clinical_report():
+    t_data = session_data["tremor"]
+    p_data = session_data["tapping"]
+    
+    report = {
+        "comparisons": [],
+        "overall_status": "Veri Bekleniyor",
+        "timestamp": time.strftime("%H:%M:%S")
+    }
+    
+    # Titreme Kıyaslaması
+    if t_data["none"] and t_data["med"]:
+        diff = t_data["none"]["score"] - t_data["med"]["score"]
+        improvement = (diff / max(t_data["none"]["score"], 1)) * 100
+        report["comparisons"].append({
+            "type": "Titreme",
+            "off_score": t_data["none"]["score"],
+            "on_score": t_data["med"]["score"],
+            "improvement": round(improvement, 1),
+            "status": "Olumlu Yanıt" if improvement >= 25 else "Kısıtlı Yanıt"
+        })
+
+    # Vuruş Kıyaslaması
+    if p_data["none"] and p_data["med"]:
+        diff = p_data["none"]["score"] - p_data["med"]["score"]
+        improvement = (diff / max(p_data["none"]["score"], 1)) * 100
+        report["comparisons"].append({
+            "type": "Bradikinezi",
+            "off_score": p_data["none"]["score"],
+            "on_score": p_data["med"]["score"],
+            "improvement": round(improvement, 1),
+            "status": "Olumlu Yanıt" if improvement >= 25 else "Kısıtlı Yanıt"
+        })
+    
+    if report["comparisons"]:
+        avg_imp = sum(c["improvement"] for c in report["comparisons"]) / len(report["comparisons"])
+        if avg_imp >= 30: report["overall_status"] = "Optimal Tedavi Yanıtı"
+        elif avg_imp >= 15: report["overall_status"] = "Kısmi Tedavi Yanıtı"
+        else: report["overall_status"] = "Düşük Tedavi Yanıtı"
+        
+    return jsonify(report)
 
 if __name__ == "__main__":
     print(f"\n  http://127.0.0.1:5000")

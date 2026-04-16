@@ -67,7 +67,7 @@
 
     .orb2 {
       width: 400px;
-      height: 400py;
+      height: 400px;
       background: rgba(74, 222, 128, 0.05);
       bottom: -50px;
       right: -80px;
@@ -1254,13 +1254,6 @@
       .diet-grid {
         grid-template-columns: 1fr;
       }
-<<<<<<< HEAD
-    }
-  </style>
-</head>
-
-<body>
-=======
       .info-btn {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--border);
@@ -1279,9 +1272,8 @@
         background: var(--accent);
         color: white;
         border-color: var(--accent);
-        transform: scale(1.1);
-      }
-      
+    }
+
       .modal-overlay {
         position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8);
         backdrop-filter: blur(10px); z-index: 1000; display: none;
@@ -1326,7 +1318,6 @@
 
 <body>
   <div class="toast-container" id="toastContainer"></div>
->>>>>>> c9d17d7 (Analizler Güncellendi!)
   <div class="bg-grid"></div>
   <div class="orb orb1"></div>
   <div class="orb orb2"></div>
@@ -1344,19 +1335,6 @@
         </span>
         <div class="header-badge">◞ MobileNetV2</div>
         <button class="info-btn" onclick="openInfoModal()">🧠 Parkinson Hakkında</button>
-<<<<<<< HEAD
-      </div>
-    </header>
-
-    <div class="hero">
-      <canvas id="neuronCanvas"></canvas>
-      <div class="hero-tag">GÖRÜNTÜ İŞLEME + YAPAY ZEKA</div>
-      <h1>Parkinson Hastalığı<br><em>Erken Tanı Sistemi</em></h1>
-      <p>Spiral çizim analizi ve gerçek zamanlı el titremesi tespiti ile iki farklı yöntemli Parkinson erken tanı
-        platformu.</p>
-    </div>
-
-=======
       </div>
     </header>
 
@@ -1381,8 +1359,6 @@
       </div>
       <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.1rem; padding:10px">✕</button>
     </div>
-
->>>>>>> c9d17d7 (Analizler Güncellendi!)
     <div class="stats-row">
       <div class="stat-card"><span class="stat-val" style="color:var(--accent2)" id="stat-acc">—</span>
         <div class="stat-label">Test Doğruluğu</div>
@@ -1404,21 +1380,14 @@
     <!-- ANA SEKMELER -->
     <div class="main-tabs">
       <button class="main-tab active" onclick="switchMainTab('drawing')">
-<<<<<<< HEAD
-        ✞︞ Çizim Analizi
-=======
         ✏️ Çizim Analizi
->>>>>>> c9d17d7 (Analizler Güncellendi!)
       </button>
       <button class="main-tab" onclick="switchMainTab('tremor')">
         🤚 El Titremesi Analizi
       </button>
-<<<<<<< HEAD
-=======
       <button class="main-tab" onclick="switchMainTab('tapping')">
         👌 Bradikinezi Analizi
       </button>
->>>>>>> c9d17d7 (Analizler Güncellendi!)
       <button class="main-tab" onclick="switchMainTab('report')">
         📊 Gelişmiş Rapor
       </button>
@@ -1437,11 +1406,7 @@
           <div class="card-body">
             <div class="upload-zone" id="uploadZone">
               <input type="file" id="fileInput" accept="image/*">
-<<<<<<< HEAD
-              <span class="upload-icon">🖊︞</span>
-=======
               <span class="upload-icon">🖊</span>
->>>>>>> c9d17d7 (Analizler Güncellendi!)
               <div class="upload-text">Çizim Görüntüsü Yükle</div>
               <div class="upload-sub">PNG, JPG • Spiral veya Dalga çizimi</div>
             </div>
@@ -1547,12 +1512,6 @@
         </div>
       </div>
     </div>
-<<<<<<< HEAD
-
-    <!-- SEKME 2: EL TİTREMESİ -->
-    <div class="main-tab-panel" id="panel-tremor">
-=======
-
     <!-- SEKME 2: EL TİTREMESİ -->
     <div class="main-tab-panel" id="panel-tremor">
       <div class="main-grid">
@@ -1714,70 +1673,10 @@
 
     <!-- SEKME 2.5: BRADİKİNEZİ ANALİZİ -->
     <div class="main-tab-panel" id="panel-tapping">
->>>>>>> c9d17d7 (Analizler Güncellendi!)
       <div class="main-grid">
         <div class="card">
           <div class="card-header">
             <div class="card-title">
-<<<<<<< HEAD
-              <div class="card-icon" style="background:rgba(251,146,60,0.15)">🤚</div>Gerçek Zamanlı Titreme Analizi
-            </div>
-            <span style="font-family:var(--mono);font-size:0.65rem;color:var(--accent3)">MediaPipe + FFT</span>
-          </div>
-          <div class="card-body">
-            <div class="camera-container" id="cameraContainer">
-              <div class="camera-placeholder" id="cameraPlaceholder">
-                <span style="font-size:3rem">📷</span>
-                <div style="font-weight:600;font-size:0.95rem">Kamera Başlatılıyor</div>
-                <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted)">Analiz başlat butonuna
-                  tıklayın</div>
-              </div>
-              <img id="cameraFeed" class="camera-feed" style="width:100%;height:100%;object-fit:cover;display:none"
-                src="">
-            </div>
-
-            <!-- GELİŞMİŞ İLAÇ SEÇİCİ -->
-            <div class="switch-container"
-              style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; padding:16px; border-radius:14px;">
-              <div style="display:flex; align-items:center; gap:12px">
-                <span style="font-size:1.8rem">💊</span>
-                <div>
-                  <div class="med-label" id="medLabelText" style="color:var(--muted)">İlaçsız Durum</div>
-                  <div style="font-size:0.7rem; color:var(--muted)">Hangi durumu test ediyorsunuz?</div>
-                </div>
-              </div>
-              <div style="display:flex; align-items:center; gap:10px">
-                <span style="font-size:0.6rem; color:var(--muted); font-weight:800">NORMAL</span>
-                <label class="switch">
-                  <input type="checkbox" id="medToggle" onchange="updateMedLabel()">
-                  <span class="slider round"></span>
-                </label>
-                <span style="font-size:0.6rem; color:var(--accent2); font-weight:800">İLAÇLI</span>
-              </div>
-            </div>
-
-            <div class="progress-bar-wrap" id="progressWrap" style="display:none">
-              <div class="progress-label">Kayıt süresi: <span id="progressTime">0.0</span>s / 5.0s</div>
-              <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-              </div>
-            </div>
-
-            <div class="tremor-controls">
-              <button class="tremor-btn tremor-start" id="startBtn" onclick="startTremor()">▶ Analizi Başlat</button>
-              <button class="tremor-btn tremor-stop" id="stopBtn" onclick="stopTremor()" disabled>➹ Durdur</button>
-            </div>
-
-            <div
-              style="margin-top:14px;padding:12px;background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.15);border-radius:10px">
-              <div style="font-size:0.78rem;font-weight:700;margin-bottom:8px;color:var(--accent)">📋 Nasıl
-                Kullanılır?</div>
-              <div style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);line-height:1.9">
-                1. "Analizi Başlat"a tıklayın<br>
-                2. İşaret parmağınızı kameraya tutun (takip noktası çıkacaktır)<br>
-                3. 5 saniye boyunca elinizi sabit (dinlenme halinde) tutun<br>
-                4. FFT spektrumu ile gerçekçi sonuç hesaplanır
-=======
               <div class="card-icon" style="background:rgba(251,146,60,0.15)">👌</div>Parmak Vuruş Analizi (Bradikinezi)
             </div>
             <div style="display:flex; align-items:center; gap:12px">
@@ -1832,7 +1731,6 @@
                 2. İşaret ve başparmağınızı mümkün olduğunca geniş ve hızlı bir şekilde birbirine vurun<br>
                 3. Test 10 saniye sürer<br>
                 4. Hız, genlik azalması ve ritim analiz edilir
->>>>>>> c9d17d7 (Analizler Güncellendi!)
               </div>
             </div>
           </div>
@@ -1841,54 +1739,6 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">
-<<<<<<< HEAD
-              <div class="card-icon" style="background:rgba(248,113,113,0.15)">📈</div>Titreme Analiz Sonucu
-            </div>
-          </div>
-          <div class="card-body">
-            <div id="tremorWaiting" style="text-align:center;padding:40px 20px;color:var(--muted)">
-              <div style="font-size:2.5rem;margin-bottom:12px">➳</div>
-              <div style="font-size:0.85rem">Analiz bekleniyor...</div>
-              <div style="font-family:var(--mono);font-size:0.7rem;margin-top:8px">Elinizi kameraya tutup analizi
-                başlatın</div>
-            </div>
-
-            <div class="tremor-result" id="tremorResult">
-              <div style="text-align:center;margin-bottom:16px">
-                <div class="tremor-score-ring">
-                  <svg width="90" height="90" viewBox="0 0 90 90">
-                    <circle cx="45" cy="45" r="38" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8" />
-                    <circle id="scoreCircle" cx="45" cy="45" r="38" fill="none" stroke="#4ade80" stroke-width="8"
-                      stroke-dasharray="239" stroke-dashoffset="239" stroke-linecap="round"
-                      style="transition:stroke-dashoffset 1.2s cubic-bezier(.16,1,.3,1)" />
-                  </svg>
-                  <div class="tremor-score-val" id="scoreVal">0</div>
-                </div>
-                <div style="font-weight:800;font-size:1.3rem;margin-bottom:4px" id="tremorLabel">—</div>
-                <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted)" id="tremorRisk">—</div>
-              </div>
-
-              <div class="tremor-metrics">
-                <div class="tremor-metric">
-                  <span class="tremor-metric-val" id="t-amp" style="color:var(--accent3)">—</span>
-                  <div class="tremor-metric-name">Amplitüd (px)</div>
-                </div>
-                <div class="tremor-metric">
-                  <span class="tremor-metric-val" id="t-freq" style="color:var(--accent)">—</span>
-                  <div class="tremor-metric-name">Frekans (Hz)</div>
-                </div>
-                <div class="tremor-metric">
-                  <span class="tremor-metric-val" id="t-dur" style="color:#a78bfa">—</span>
-                  <div class="tremor-metric-name">Süre (sn)</div>
-                </div>
-              </div>
-
-              <div
-                style="margin-top:16px;padding:12px;border-radius:8px;font-family:var(--mono);font-size:0.68rem;color:var(--muted);border:1px solid var(--border)">
-                <div style="margin-bottom:4px;color:var(--text);font-size:0.72rem;font-weight:600">Parkinson Titreme
-                  Kriterleri:</div>
-                Frekans: 4-6 Hz • Amplitüd: yüksek • Dinlenme halinde artar
-=======
               <div class="card-icon" style="background:rgba(251,146,60,0.15)">📈</div>Vuruş Analiz Raporu
             </div>
           </div>
@@ -1927,49 +1777,17 @@
               <div style="margin-top:16px;padding:12px;border-radius:8px;font-family:var(--mono);font-size:0.68rem;color:var(--muted);border:1px solid var(--border)">
                 <div style="margin-bottom:4px;color:var(--text);font-size:0.72rem;font-weight:600">UPDRS Puanlama:</div>
                 0: Normal • 1: Hafif Yavaş • 2: Erken Yorulma • 3: Belirgin Kesinti • 4: Sürdüremiyor
->>>>>>> c9d17d7 (Analizler Güncellendi!)
               </div>
 
               <div class="disclaimer" style="margin-top:12px">⚠ Bu sonuç bir yapay zeka tahminidir. Kesin tanı için
                 nöroloji uzmanına başvurunuz.</div>
             </div>
-<<<<<<< HEAD
 
-            <!-- İLAÇ ETKİ ANALİZİ (INSIGHT) -->
-            <div id="medInsight" class="insight-card">
-              <div style="font-size:0.9rem; font-weight:700; margin-bottom:4px; color:var(--accent2)" id="insightTitle">
-                💊 İlaç Etki Analizi</div>
-              <div style="font-size:0.75rem; color:var(--text); line-height:1.4" id="insightDesc">Karşılaştırma
-                için hem ilaçlı hem ilaçsız analiz yapmalısınız.</div>
-            </div>
-
-            <!-- GEÇMİŞ LOGU -->
-            <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px">
-              <div
-                style="font-size:0.8rem; font-weight:700; color:var(--muted); margin-bottom:12px; display:flex; justify-content:space-between">
-                <span>📜 GEÇMİŞ ANALİZLER</span>
-                <button onclick="clearHistory()"
-                  style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.6rem; font-family:var(--mono)">TEMİZLE
-                  [x]</button>
-              </div>
-              <div id="historyList"
-                style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto">
-                <!-- Loglar buraya gelecek -->
-                <div style="text-align:center; font-size:0.65rem; color:var(--muted); padding:10px">Henüz geçmiş
-                  analiz yok</div>
-              </div>
-            </div>
-=======
->>>>>>> c9d17d7 (Analizler Güncellendi!)
           </div>
         </div>
       </div>
     </div>
-<<<<<<< HEAD
 
-  </div>
-=======
->>>>>>> c9d17d7 (Analizler Güncellendi!)
 
   <!-- SEKME 3: GELİŞMİŞ RAPOR -->
   <div class="main-tab-panel" id="panel-report">
@@ -2071,13 +1889,6 @@
           </div>
 
           <div
-<<<<<<< HEAD
-            style="margin-top:30px; padding:20px; background:rgba(74,222,128,0.05); border:1px solid rgba(74,222,128,0.2); border-radius:12px">
-            <div style="font-size:0.85rem; font-weight:700; color:var(--accent2); margin-bottom:10px">👨„⚕︞
-              Doktor İçin Otomatik Not</div>
-            <p id="dr-note" style="font-size:0.8rem; color:var(--text); line-height:1.6; font-style:italic">Veriler
-              analiz ediliyor...</p>
-=======
             style="margin-top:30px; padding:24px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; position:relative; overflow:hidden">
             <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:var(--accent2)"></div>
             <div style="font-size:0.9rem; font-weight:800; color:var(--text); margin-bottom:12px; display:flex; justify-content:space-between; align-items:center">
@@ -2091,7 +1902,6 @@
                   <span>🖨</span> Raporu Yazdır (PDF)
                 </button>
             </div>
->>>>>>> c9d17d7 (Analizler Güncellendi!)
           </div>
         </div>
       </div>
@@ -2119,10 +1929,7 @@
           <button class="modal-tab" onclick="switchInfoTab('evreler')">Evreler</button>
           <button class="modal-tab" onclick="switchInfoTab('beslenme')">Beslenme</button>
           <button class="modal-tab" onclick="switchInfoTab('yasam')">Yaşam</button>
-<<<<<<< HEAD
-=======
           <button class="modal-tab" onclick="switchInfoTab('erken-teshis')">Erken Teşhis</button>
->>>>>>> c9d17d7 (Analizler Güncellendi!)
         </div>
         <div class="modal-panels">
           <!-- Nedir -->
@@ -2245,22 +2052,6 @@
                 sosyalleşmek moral açısından çok önemlidir.</li>
             </ul>
           </div>
-<<<<<<< HEAD
-        </div>
-      </div>
-      <div class="modal-footer">
-        ⚠ Yalnızca araştırma amaçlıdır. Profesyonel tıbbi tavsiye yerine geçmez.
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const API = "http://127.0.0.1:5000";
-    let tremorPolling = null;
-    let cameraStarted = false;
-
-=======
-
           <!-- Erken Teşhis -->
           <div class="modal-panel" id="info-erken-teshis">
             <h3>Erken Teşhisin Hayati Önemi</h3>
@@ -2362,8 +2153,6 @@
     const API = "http://127.0.0.1:5000";
     let tremorPolling = null;
     let cameraStarted = false;
-
->>>>>>> c9d17d7 (Analizler Güncellendi!)
     // ── API Kontrol ──
     async function checkAPI() {
       try {
@@ -2413,65 +2202,6 @@
       } catch (e) { console.log(e) }
     }
 
-<<<<<<< HEAD
-    // ── Ana Sekme ──
-    function switchMainTab(id) {
-      document.querySelectorAll(".main-tab").forEach(b => {
-        const tabId = b.getAttribute("onclick").match(/'(.*?)'/)[1];
-        b.classList.toggle("active", tabId === id);
-      });
-      document.querySelectorAll(".main-tab-panel").forEach(p => p.classList.remove("active"));
-      document.getElementById("panel-" + id).classList.add("active");
-
-      if (id === "tremor") {
-        startCamera();
-      }
-      if (id === "report") {
-        renderAdvancedReport();
-      }
-    }
-
-    // ── Kamera ──
-    function startCamera() {
-      const feed = document.getElementById("cameraFeed");
-      const placeholder = document.getElementById("cameraPlaceholder");
-
-      feed.style.display = "block";
-      placeholder.style.display = "none";
-      cameraStarted = true;
-
-      // MJPEG stream - boundary ile ayir
-      const streamUrl = API + "/video_feed";
-      feed.src = streamUrl;
-
-      feed.onload = () => console.log("Kamera yuklendi");
-      feed.onerror = (e) => {
-        console.log("Feed hatasi, yeniden deneniyor...", e);
-        setTimeout(() => { feed.src = streamUrl + "?t=" + Date.now(); }, 1000);
-      };
-    }
-
-    // Tremor sekmesine ilk gircede otomatik baslat
-    document.addEventListener("DOMContentLoaded", () => {
-      // Sayfa yuklenince video feed hazirla
-      const feed = document.getElementById("cameraFeed");
-      feed.onerror = () => {
-        console.log("Video feed yeniden baglaniyor...");
-        setTimeout(() => { feed.src = API + "/video_feed?t=" + Date.now(); }, 1000);
-      };
-    });
-
-    function updateMedLabel() {
-      const isChecked = document.getElementById("medToggle").checked;
-      const label = document.getElementById("medLabelText");
-      label.textContent = isChecked ? "İlaçlı Durum (Analiz)" : "İlaçsız Durum (Normal)";
-      label.style.color = isChecked ? "var(--accent2)" : "var(--muted)";
-    }
-
-    // ── Titreme Analizi ──
-    async function startTremor() {
-      const medStatus = document.getElementById("medToggle").checked;
-=======
     // ── Kamera Yönetimi ──
     async function openCameraHardware() {
       // Aktif paneldeki placeholder'ı bul
@@ -2611,7 +2341,6 @@
       // 3. Geri sayım başlat
       await runCountdown("testCountdownOverlay", "testCountdownVal");
       
->>>>>>> c9d17d7 (Analizler Güncellendi!)
       try {
         await fetch(API + "/tremor/start", {
           method: "POST",
@@ -2637,12 +2366,8 @@
 
             if (!d.active && d.result) {
               clearInterval(tremorPolling);
-<<<<<<< HEAD
-              showTremorResult(d.result);
-=======
               const finalResult = { ...d.result, medication: d.medication };
               showTremorResult(finalResult);
->>>>>>> c9d17d7 (Analizler Güncellendi!)
               document.getElementById("startBtn").disabled = false;
               document.getElementById("stopBtn").disabled = true;
               document.getElementById("progressWrap").style.display = "none";
@@ -2661,24 +2386,17 @@
       try {
         const r = await fetch(API + "/tremor/stop", { method: "POST" });
         const d = await r.json();
-<<<<<<< HEAD
-        if (d.result) showTremorResult(d.result);
-=======
         if (d.result) {
           const finalResult = { ...d.result, medication: d.medication };
           showTremorResult(finalResult);
         }
->>>>>>> c9d17d7 (Analizler Güncellendi!)
       } catch (e) { }
       document.getElementById("startBtn").disabled = false;
       document.getElementById("stopBtn").disabled = true;
       document.getElementById("progressWrap").style.display = "none";
       document.getElementById("progressFill").style.width = "0%";
-<<<<<<< HEAD
-=======
       // Manuel durdurunca da kapat
       closeCameraHardware();
->>>>>>> c9d17d7 (Analizler Güncellendi!)
     }
 
     function showTremorResult(r) {
@@ -2687,32 +2405,20 @@
       box.style.borderColor = r.color;
       box.classList.add("active");
 
-      document.getElementById("tremorLabel").textContent = `Titreme Şiddeti: ${r.severity.toUpperCase()}`;
+      document.getElementById("tremorLabel").textContent = `Klinik Değerlendirme: ${r.severity.toUpperCase()}`;
       document.getElementById("tremorLabel").style.color = r.color;
 
-      const medIcon = r.medication ? "💊 İlaçlı" : "➌ İlaçsız";
-      document.getElementById("tremorRisk").textContent = `${medIcon} • Risk Seviyesi: ${r.risk} • Parkinson Riski: %${r.risk_score}`;
+      const medIcon = r.medication ? "💊 İlaç Etkisi Altında" : "➌ Temel (Bazal) Durum";
+      document.getElementById("tremorRisk").textContent = `${medIcon} • Şiddet Skoru: ${r.risk} • Patoloji Olasılığı: %${r.risk_score}`;
 
-      document.getElementById("scoreVal").textContent = "%" + r.risk_score;
+      document.getElementById("scoreVal").textContent = r.updrs_score;
       document.getElementById("scoreVal").style.color = r.color;
-<<<<<<< HEAD
-      document.getElementById("t-amp").textContent = r.amplitude;
-      document.getElementById("t-freq").textContent = r.frequency + " Hz";
-      if (r.is_parkinson_freq) {
-        document.getElementById("t-freq").innerHTML += ' <span style="font-size:0.6rem;background:rgba(248,113,113,0.2);padding:2px 4px;border-radius:4px;color:var(--danger)">⚠ KRİTİK ARALIK</span>';
-      }
-      document.getElementById("t-dur").textContent = r.duration;
-
-      // Ring animasyonu
-=======
       document.getElementById("t-amp").textContent = "%" + r.norm_amp_pct;
       document.getElementById("t-freq").textContent = r.frequency + " Hz";
       if (r.is_parkinson_freq) {
-        document.getElementById("t-freq").innerHTML += ' <span style="font-size:0.6rem;background:rgba(248,113,113,0.2);padding:2px 4px;border-radius:4px;color:var(--danger)">⚠ KRİTİK</span>';
+        document.getElementById("t-freq").innerHTML += ' <span style="font-size:0.6rem;background:rgba(248,113,113,0.2);padding:2px 4px;border-radius:4px;color:var(--danger)">⚠ KRİTİK BAND</span>';
       }
       document.getElementById("t-updrs").textContent = r.updrs_score;
-
->>>>>>> c9d17d7 (Analizler Güncellendi!)
       const circle = document.getElementById("scoreCircle");
       circle.style.stroke = r.color;
       const offset = 239 - (r.risk_score / 100) * 239;
@@ -2720,18 +2426,11 @@
 
       saveToHistory(r);
       calculateInsight();
-<<<<<<< HEAD
-    }
-
-    // ── Geçmiş Yönetimi ──
-    function saveToHistory(r) {
-      let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
-      const item = {
-=======
-      showToast("Analiz verileri başarıyla kaydedildi.", "success");
+      showToast("Analiz verileri klinik rapora eklendi.", "success");
       // Analiz bitince kamerayı kapat
       closeCameraHardware();
     }
+
 
     // ── Bradikinezi (Tapping) Analizi ──
     const signalData = [];
@@ -2845,7 +2544,7 @@
       box.style.borderColor = r.color;
 
       const label = document.getElementById("tapLabel");
-      label.textContent = "Analiz Sonucu: " + r.severity.toUpperCase();
+      label.textContent = "Bradikinezi Değerlendirmesi: " + r.severity.toUpperCase();
       label.style.color = r.color;
       
       document.getElementById("tapDesc").textContent = r.recommendation;
@@ -2858,28 +2557,20 @@
       saveToHistory(r, 'tapping');
       // Analiz bitince kamerayı kapat
       closeCameraHardware();
+      showToast("Vuruş analizi klinik seansa kaydedildi.", "success");
     }
+
 
     // ── Geçmiş Yönetimi ──
     function saveToHistory(r, type = 'tremor') {
       let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
       const item = {
         type: type,
->>>>>>> c9d17d7 (Analizler Güncellendi!)
         date: new Date().toLocaleTimeString(),
         med: r.medication,
         score: r.risk_score,
         color: r.color
       };
-<<<<<<< HEAD
-      history.unshift(item);
-      if (history.length > 10) history.pop();
-      localStorage.setItem("neuroscan_history", JSON.stringify(history));
-      renderHistory();
-    }
-
-=======
-
       if (type === 'tremor') {
         item.freq = r.frequency;
         item.amp = r.amplitude;
@@ -2895,8 +2586,6 @@
       localStorage.setItem("neuroscan_history", JSON.stringify(history));
       renderHistory();
     }
-
->>>>>>> c9d17d7 (Analizler Güncellendi!)
     function renderHistory() {
       const list = document.getElementById("historyList");
       let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
@@ -2904,18 +2593,6 @@
         list.innerHTML = '<div style="text-align:center; font-size:0.65rem; color:var(--muted); padding:10px">Henüz geçmiş analiz yok</div>';
         return;
       }
-<<<<<<< HEAD
-      list.innerHTML = history.map(h => `
-        <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; animation:fadeUp 0.3s ease both">
-            <div style="display:flex; align-items:center; gap:8px">
-                <span style="font-family:var(--mono); font-size:0.65rem; color:var(--muted)">${h.date}</span>
-                <span style="font-size:0.7rem">${h.med ? '💊' : '➌'}</span>
-                <span style="font-weight:700; font-size:0.8rem; color:${h.color}">%${h.score}</span>
-            </div>
-            <span style="font-family:var(--mono); font-size:0.65rem; color:var(--accent)">${h.freq} Hz</span>
-        </div>
-    `).join('');
-=======
       list.innerHTML = history.map(h => {
         const icon = h.type === 'tremor' ? '〰' : '👌';
         const metric = h.type === 'tremor' ? `${h.freq} Hz` : `${h.rate} t/s`;
@@ -2931,7 +2608,6 @@
           </div>
         `;
       }).join('');
->>>>>>> c9d17d7 (Analizler Güncellendi!)
     }
 
     function clearHistory() {
@@ -2942,35 +2618,6 @@
 
     function calculateInsight() {
       let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
-<<<<<<< HEAD
-      let medScores = history.filter(h => h.med).map(h => h.score);
-      let normalScores = history.filter(h => !h.med).map(h => h.score);
-
-      const insightCard = document.getElementById("medInsight");
-      const title = document.getElementById("insightTitle");
-      const desc = document.getElementById("insightDesc");
-
-      if (medScores.length > 0 && normalScores.length > 0) {
-        let avgMed = medScores.reduce((a, b) => a + b, 0) / medScores.length;
-        let avgNormal = normalScores.reduce((a, b) => a + b, 0) / normalScores.length;
-        let diff = avgNormal - avgMed;
-
-        insightCard.classList.add("active");
-        if (diff > 5) {
-          title.textContent = "✅ İlaç Etkisi Olumlu";
-          title.style.color = "var(--accent2)";
-          desc.textContent = `İlaçlı ölçümleriniz, normale göre %${Math.round((diff / avgNormal) * 100)} daha düşük titreme gösteriyor. Tedaviniz etkili görünüyor.`;
-        } else if (Math.abs(diff) <= 5) {
-          title.textContent = "📊 Benzer Sonuçlar";
-          title.style.color = "var(--accent)";
-          desc.textContent = "İlaçlı ve ilaçsız ölçümleriniz arasında belirgin bir fark saptanmadı. Doktorunuzla bu durumu paylaşabilirsiniz.";
-        } else {
-          title.textContent = "⚠︞ Dikkat Çekici Fark";
-          title.style.color = "var(--accent3)";
-          desc.textContent = "İlaçlı ölçümlerde titreme seviyesi daha yüksek çıktı. Bu durum yorgunluk veya stres kaynaklı olabilir.";
-        }
-      }
-=======
       const insightCard = document.getElementById("medInsight");
       const title = document.getElementById("insightTitle");
       const desc = document.getElementById("insightDesc");
@@ -3013,20 +2660,10 @@
         title.style.color = isPositive ? "var(--accent2)" : "var(--accent)";
         desc.innerHTML = insightLines.join("<br>");
       }
->>>>>>> c9d17d7 (Analizler Güncellendi!)
     }
 
     function renderAdvancedReport() {
       let history = JSON.parse(localStorage.getItem("neuroscan_history") || "[]");
-<<<<<<< HEAD
-      let meds = history.filter(h => h.med);
-      let normals = history.filter(h => !h.med);
-
-      const empty = document.getElementById("reportEmpty");
-      const content = document.getElementById("reportContent");
-
-      if (meds.length === 0 || normals.length === 0) {
-=======
       const empty = document.getElementById("reportEmpty");
       const content = document.getElementById("reportContent");
 
@@ -3040,7 +2677,6 @@
 
       // Gelişmiş Rapor Görünürlük Mantığı: En az bir veri varsa göster
       if (history.length === 0) {
->>>>>>> c9d17d7 (Analizler Güncellendi!)
         empty.style.display = "block";
         empty.innerHTML = `
           <div style="text-align:center; padding:40px; background:rgba(255,255,255,0.02); border-radius:20px; border:1px dashed var(--border)">
@@ -3054,134 +2690,6 @@
         content.style.display = "none";
         return;
       }
-<<<<<<< HEAD
-
-      empty.style.display = "none";
-      content.style.display = "block";
-
-      const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
-
-      let aM = avg(meds.map(h => h.score));
-      let aN = avg(normals.map(h => h.score));
-      let diff = aN - aM;
-
-      document.getElementById("rep-normal").textContent = "%" + aN.toFixed(1);
-      document.getElementById("rep-med").textContent = "%" + aM.toFixed(1);
-
-      const diffEl = document.getElementById("rep-diff");
-      if (diff > 0) {
-        diffEl.textContent = `TITREME %${Math.round((diff / aN) * 100)} AZALDI`;
-        diffEl.style.background = "var(--accent2)";
-        diffEl.style.color = "#0a1a0a";
-      } else {
-        diffEl.textContent = "BELIRGIN FARK YOK";
-        diffEl.style.background = "var(--surface2)";
-        diffEl.style.color = "var(--muted)";
-      }
-
-      // Table
-      document.getElementById("rt-freq-n").textContent = avg(normals.map(h => h.freq)).toFixed(2) + " Hz";
-      document.getElementById("rt-freq-m").textContent = avg(meds.map(h => h.freq)).toFixed(2) + " Hz";
-      document.getElementById("rt-amp-n").textContent = avg(normals.map(h => h.amp || 0)).toFixed(1) + " px";
-      document.getElementById("rt-amp-m").textContent = avg(meds.map(h => h.amp || 0)).toFixed(1) + " px";
-      document.getElementById("rt-score-n").textContent = "%" + Math.min(...normals.map(h => h.score)).toFixed(1);
-      document.getElementById("rt-score-m").textContent = "%" + Math.min(...meds.map(h => h.score)).toFixed(1);
-
-      // Doctor Note
-      const note = document.getElementById("dr-note");
-      if (diff > 15) {
-        note.textContent = `"Hasta, ilaç tedavisine pozitif yanıt veriyor. İlaçlı ölçümlerde titreme şiddetinde %15'in üzerinde anlamlı bir azalma gözlemlenmiştir. Mevcut dozaj etkili görünmektedir."`;
-      } else if (diff > 5) {
-        note.textContent = `"İlaç sonrası hafif bir iyileşme gözlemlense de titreme frekansı hala kritik aralıkta seyrediyor. İlacın tam etki saati veya dozajı gözden geçirilebilir."`;
-      } else {
-        note.textContent = `"İlaçlı ve ilaçsız ölçümler arasında istatistiksel olarak anlamlı bir fark saptanmamıştır. İlacın biyoyararlanımı veya hastanın direnç durumu klinik olarak değerlendirilmelidir."`;
-      }
-    }
-
-    // ── Çizim Upload ──
-    const fileInput = document.getElementById("fileInput");
-    const uploadZone = document.getElementById("uploadZone");
-    let currentFile = null;
-
-    fileInput.addEventListener("change", e => { if (e.target.files[0]) showPreview(e.target.files[0]); });
-    uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag-over") });
-    uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
-    uploadZone.addEventListener("drop", e => {
-      e.preventDefault(); uploadZone.classList.remove("drag-over");
-      const f = e.dataTransfer.files[0];
-      if (f && f.type.startsWith("image/")) showPreview(f);
-    });
-
-    function showPreview(file) {
-      currentFile = file;
-      const reader = new FileReader();
-      reader.onload = e => {
-        document.getElementById("previewImg").src = e.target.result;
-        document.getElementById("uploadZone").style.display = "none";
-        document.getElementById("previewArea").classList.add("active");
-        document.getElementById("resultBox").classList.remove("active");
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function resetUpload() {
-      document.getElementById("uploadZone").style.display = "block";
-      document.getElementById("previewArea").classList.remove("active");
-      document.getElementById("resultBox").classList.remove("active");
-      fileInput.value = ""; currentFile = null;
-    }
-
-    async function analyzeImage() {
-      if (!currentFile) return;
-      const btn = document.getElementById("analyzeBtn");
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Analiz ediliyor...';
-      try {
-        const fd = new FormData();
-        fd.append("file", currentFile);
-        const r = await fetch(API + "/predict", { method: "POST", body: fd });
-        if (!r.ok) throw new Error("API hatası");
-        const d = await r.json();
-        const isP = d.prediction === "parkinson";
-        const rb = document.getElementById("resultBox");
-        rb.className = "result-box active " + (isP ? "parkinson" : "healthy");
-        const rl = document.getElementById("resultLabel");
-        rl.style.color = isP ? "var(--danger)" : "var(--accent2)";
-        rl.textContent = isP ? "⚠ Parkinson Belirtisi Tespit Edildi" : "✓ Sağlıklı — Parkinson Belirtisi Yok";
-        document.getElementById("resultConf").textContent = `Güven skoru: ${d.confidence}% • Model: ${d.model}`;
-        document.getElementById("healthyPct").textContent = d.healthy_prob + "%";
-        document.getElementById("parkinsonPct").textContent = d.parkinson_prob + "%";
-        setTimeout(() => {
-          document.getElementById("healthyBar").style.width = d.healthy_prob + "%";
-          document.getElementById("parkinsonBar").style.width = d.parkinson_prob + "%";
-        }, 100);
-      } catch (e) {
-        alert("➌ API bağlantı hatası!\npython app.py çalıştırın.");
-      }
-      btn.disabled = false;
-      btn.innerHTML = "🔞 Tekrar Analiz Et";
-    }
-
-    checkAPI();
-    setInterval(checkAPI, 10000);
-
-    // ── Bilgi Modal Yönetimi ──
-    function openInfoModal() {
-      document.getElementById("infoModal").classList.add("active");
-      document.body.style.overflow = "hidden";
-    }
-
-    function closeInfoModal() {
-      document.getElementById("infoModal").classList.remove("active");
-      document.body.style.overflow = "auto";
-    }
-
-    document.getElementById("infoModal").addEventListener("click", function (e) {
-      if (e.target === this) closeInfoModal();
-    });
-
-=======
-
       // Karşılaştırma gereksinimi uyarısı (Bilgilendirme Amaçlı)
       const hasComparison = (tremNormals.length > 0 && tremMeds.length > 0) || (tapNormals.length > 0 && tapMeds.length > 0);
       if (!hasComparison) {
@@ -3198,52 +2706,61 @@
       empty.style.display = "none";
       content.style.display = "block";
 
-      // 1. Ortalama Fonksiyonu
-      const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-      
-      const getResponseTier = (pct) => {
-          if (pct >= 30) return { label: "BELİRGİN YANIT", color: "#4ade80", bg: "rgba(74,222,128,0.15)" };
-          if (pct >= 15) return { label: "ORTA YANIT", color: "#fbbf24", bg: "rgba(251,191,36,0.15)" };
-          return { label: "SINIRLI/DÜŞÜK YANIT", color: "#94a3b8", bg: "rgba(148,163,184,0.15)" };
-      };
+      // 3. Detaylı Tabloyu Doldur (Son kayıtlar)
+      const lastTremN = tremNormals[0], lastTremM = tremMeds[0];
+      const lastTapN = tapNormals[0], lastTapM = tapMeds[0];
 
-      // 1. Tremor Verilerini İşle
-      const avgTremN = avg(tremNormals.map(h => h.score));
-      const avgTremM = avg(tremMeds.map(h => h.score));
-      
-      if (tremNormals.length > 0) document.getElementById("rep-normal").textContent = "%" + avgTremN.toFixed(1);
-      if (tremMeds.length > 0) document.getElementById("rep-med").textContent = "%" + avgTremM.toFixed(1);
-      
-      let tremorImprovement = 0;
-      if (tremNormals.length > 0 && tremMeds.length > 0) {
-          tremorImprovement = Math.round(((avgTremN - avgTremM) / avgTremN) * 100);
-          const tier = getResponseTier(tremorImprovement);
-          const diffEl = document.getElementById("rep-diff");
-          diffEl.textContent = `%${Math.abs(tremorImprovement)} ${tremorImprovement > 0 ? 'İyileşme' : 'Değişim'}`;
-          diffEl.style.background = tier.bg;
-          diffEl.style.color = tier.color;
-          diffEl.style.fontWeight = "800";
+      if (lastTremN) {
+          document.getElementById("rt-freq-n").textContent = `${lastTremN.freq} Hz`;
+          document.getElementById("rt-amp-n").textContent = `%${lastTremN.amp || 0}`;
+          document.getElementById("rt-score-n").textContent = lastTremN.score;
+      }
+      if (lastTremM) {
+          document.getElementById("rt-freq-m").textContent = `${lastTremM.freq} Hz`;
+          document.getElementById("rt-amp-m").textContent = `%${lastTremM.amp || 0}`;
+          document.getElementById("rt-score-m").textContent = lastTremM.score;
+          
+          if (lastTremN) {
+              const imp = lastTremN.score - lastTremM.score;
+              document.getElementById("rt-freq-d").textContent = imp >= 0 ? `-${imp} Skor` : `+${Math.abs(imp)} Skor`;
+              document.getElementById("rt-amp-d").textContent = (lastTremN.amp - lastTremM.amp).toFixed(1) + "%";
+          }
       }
 
-      // 2. Tapping Verilerini İşle (UPDRS 0-4 üzerinden)
+      // 4. Klinik Raporu Sunucudan Çek
+      fetch(API + "/report/clinical")
+        .then(r => r.json())
+        .then(d => {
+            const tierEl = document.getElementById("overallTier");
+            tierEl.textContent = d.overall_status.toUpperCase();
+            document.getElementById("reportTimestamp").textContent = d.timestamp;
+            
+            let note = "";
+            if (d.comparisons.length === 0) {
+                note = "Tam kapsamlı bir klinik değerlendirme için lütfen hem ilaç öncesi hem de ilaç sonrası testlerinizi tamamlayın.";
+                tierEl.style.background = "var(--surface2)";
+            } else {
+                const head = d.comparisons[0];
+                note = `Yapılan karşılaştırmalı analizde ${head.type} semptomlarında %${head.improvement} oranında bir değişim gözlemlenmiştir. `;
+                note += head.improvement >= 25 ? "Bu durum uygulanan tedaviye klinik olarak anlamlı bir yanıt verildiğini göstermektedir. " : "Tedavi yanıtı kısıtlı görünmektedir; bu durum dozaj veya ilaç zamanlamasıyla ilişkili olabilir. ";
+                note += "Lütfen bu raporu doktorunuzla paylaşın.";
+                tierEl.style.background = head.improvement >= 25 ? "rgba(74,222,128,0.2)" : "rgba(251,191,36,0.2)";
+                tierEl.style.color = head.improvement >= 25 ? "var(--accent2)" : "var(--accent3)";
+            }
+            document.getElementById("dr-note").textContent = note;
+        });
+
+      // 3. Detaylı Tablo (Metrics)
+      const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+      
+      const avgTremN = avg(tremNormals.map(h => h.score));
+      const avgTremM = avg(tremMeds.map(h => h.score));
       const avgTapN = avg(tapNormals.map(h => h.score));
       const avgTapM = avg(tapMeds.map(h => h.score));
 
-      if (tapNormals.length > 0) document.getElementById("rep-tap-normal").textContent = avgTapN.toFixed(1);
-      if (tapMeds.length > 0) document.getElementById("rep-tap-med").textContent = avgTapM.toFixed(1);
+      const tremorImprovement = avgTremN > 0 ? Math.round(((avgTremN - avgTremM) / avgTremN) * 100) : 0;
+      const tapImprovement = avgTapN > 0 ? Math.round(((avgTapN - avgTapM) / avgTapN) * 100) : 0;
 
-      let tapImprovement = 0;
-      if (tapNormals.length > 0 && tapMeds.length > 0) {
-          tapImprovement = Math.round(((avgTapN - avgTapM) / (avgTapN || 1)) * 100);
-          const tier = getResponseTier(tapImprovement);
-          const diffEl = document.getElementById("rep-tap-diff");
-          diffEl.textContent = `%${Math.abs(tapImprovement)} ${tapImprovement > 0 ? 'Düzelme' : 'Değişim'}`;
-          diffEl.style.background = tier.bg;
-          diffEl.style.color = tier.color;
-          diffEl.style.fontWeight = "800";
-      }
-
-      // 3. Detaylı Tablo
       const fillCell = (id, val, suffix="") => {
           document.getElementById(id).textContent = val ? val.toFixed(2) + suffix : "—";
       };
@@ -3266,6 +2783,12 @@
       let commentary = "";
       const maxImp = Math.max(tremorImprovement, tapImprovement);
       
+      const getResponseTier = (pct) => {
+          if (pct >= 30) return { label: "BELİRGİN YANIT", color: "#4ade80", bg: "rgba(74,222,128,0.15)" };
+          if (pct >= 15) return { label: "ORTA YANIT", color: "#fbbf24", bg: "rgba(251,191,36,0.15)" };
+          return { label: "SINIRLI/DÜŞÜK YANIT", color: "#94a3b8", bg: "rgba(148,163,184,0.15)" };
+      };
+
       if (!hasComparison) {
           commentary = "Kapsamlı bir değerlendirme için hem 'İlaçlı' hem 'Normal' ölçümlerin yapılması beklenmektedir. Mevcut veriler tekil ölçüm olarak kaydedilmiştir.";
           tierEl.textContent = "VERİ EKSİK";
@@ -3286,6 +2809,7 @@
       }
       note.innerHTML = commentary;
     }
+
 
     // ── Çizim Upload ──
     const fileInput = document.getElementById("fileInput");
@@ -3368,8 +2892,6 @@
     document.getElementById("infoModal").addEventListener("click", function (e) {
       if (e.target === this) closeInfoModal();
     });
-
->>>>>>> c9d17d7 (Analizler Güncellendi!)
     function switchInfoTab(tabId) {
       document.querySelectorAll(".modal-tab").forEach(tab => {
         tab.classList.toggle("active", tab.getAttribute("onclick").includes(tabId));
