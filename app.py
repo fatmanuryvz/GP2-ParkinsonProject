@@ -18,16 +18,28 @@ tf.random.set_seed(42)
 np.random.seed(42)
 import cv2
 import mediapipe as mp
-# MediaPipe 'solutions' bazı ortamlarda eksik olabildiği için fallback ekliyoruz
-try:
-    from mediapipe.solutions import hands as mp_hands
-    from mediapipe.solutions import drawing_utils as mp_draw
-    MP_AVAILABLE = True
-except (ImportError, AttributeError):
-    MP_AVAILABLE = False
-    print("WARNING: MediaPipe 'solutions' not found. Falling back to HSV tracking.")
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 
-from scipy.signal import butter, lfilter
+# MediaPipe Tasks API Hazırlığı
+# hand_landmarker.task dosyası proje kök dizininde olmalıdır
+base_options = python.BaseOptions(model_asset_path='hand_landmarker.task')
+options = vision.HandLandmarkerOptions(
+    base_options=base_options,
+    num_hands=1,
+    min_hand_detection_confidence=0.5,
+    min_hand_presence_confidence=0.5,
+    min_tracking_confidence=0.5
+)
+try:
+    detector = vision.HandLandmarker.create_from_options(options)
+    MP_AVAILABLE = True
+    print("  [OK] MediaPipe Tasks API hazir")
+except Exception as e:
+    MP_AVAILABLE = False
+    print(f"WARNING: MediaPipe initialization error: {e}")
+
+from scipy.signal import butter, lfilter, find_peaks
 from scipy.fft import fft, fftfreq
 
 app = Flask(__name__, static_folder='.')
@@ -43,7 +55,7 @@ print("="*50)
 print("\nCNN Modeli yukleniyor...")
 model = tf.keras.models.load_model(MODEL_PATH)
 _ = model(np.zeros((1,224,224,3),dtype=np.float32), training=False).numpy()
-print("  ✓ CNN Model hazir")
+print("  [OK] CNN Model hazir")
 
 class_indices = {"healthy": 0, "parkinson": 1}
 if os.path.exists("model_results.json"):
@@ -52,19 +64,8 @@ if os.path.exists("model_results.json"):
     if "class_indices" in d:
         class_indices = d["class_indices"]
 
-# ── MEDIAPIPE HAZIRLIK ──
-hands = None
-if MP_AVAILABLE:
-    try:
-        hands = mp_hands.Hands(
-            static_image_mode=False,
-            max_num_hands=1,
-            min_detection_confidence=0.7,
-            min_tracking_confidence=0.7
-        )
-    except Exception as e:
-        print(f"MediaPipe initialization error: {e}")
-        MP_AVAILABLE = False
+# ── MEDIAPIPE HAZIRLIK (Eski solutions artik kullanilmiyor) ──
+# detector objesi yukarida global olarak initialize edildi
 
 # ── KAMERA THREAD ──
 class CameraThread:
@@ -73,14 +74,40 @@ class CameraThread:
         self.lock      = threading.Lock()
         self.running   = False
         self.cap       = None
+        self.thread    = None
 
     def start(self):
-        self.running = True
-        t = threading.Thread(target=self._read_loop, daemon=True)
-        t.start()
-        print("  ✓ Kamera thread baslatildi")
+        with self.lock:
+            if self.running: return True
+            
+            self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+            if not self.cap.isOpened():
+                print("  [ERROR] Kamera acilamadi!")
+                return False
+                
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+            self.cap.set(cv2.CAP_PROP_FPS, 15)
+            
+            self.running = True
+            self.thread = threading.Thread(target=self._read_loop, daemon=True)
+            self.thread.start()
+            print("  [OK] Kamera donanimi aktif")
+            return True
+
+    def stop(self):
+        with self.lock:
+            self.running = False
+            self.frame = None
+        if self.thread:
+            self.thread.join(timeout=1.0)
+        if self.cap:
+            self.cap.release()
+            self.cap = None
+        print("  [OK] Kamera donanimi kapatildi")
 
     def _read_loop(self):
+<<<<<<< HEAD
         valid_cap = None
         for i in range(3):
             cap = cv2.VideoCapture(i)
@@ -95,6 +122,8 @@ class CameraThread:
         time.sleep(1.0)
         print(f"  Kamera durumu: {self.cap.isOpened()}")
         
+=======
+>>>>>>> c9d17d7 (Analizler Güncellendi!)
         while self.running:
             ret, frame = self.cap.read()
             if ret and frame is not None:
@@ -102,25 +131,157 @@ class CameraThread:
                 with self.lock:
                     self.frame = frame.copy()
             else:
-                time.sleep(0.05)
+                time.sleep(0.01)
 
     def get_frame(self):
         with self.lock:
             return self.frame.copy() if self.frame is not None else None
 
 camera = CameraThread()
-camera.start()
-time.sleep(2)  # Kamera isinsin
+# Acilista kamera kapatildi, artik butonlarla acilmasi bekleniyor
+# camera.start() silindi
 
 # Titreme state
 tremor_state = {
     "active": False,
     "positions": [],
     "timestamps": [],
+    "hand_sizes": [], # Mesafe normalizasyonu için
     "result": None,
     "medication": False # İlaç durumu
 }
 tremor_lock  = threading.Lock()
+
+# Bradikinezi (Finger Tapping) state
+tapping_state = {
+    "active": False,
+    "distances": [],
+    "timestamps": [],
+    "result": None,
+    "medication": False,
+    "current_dist": 0.0 # Canlı sinyal için
+}
+tapping_lock = threading.Lock()
+
+class BradikineziaAnalyzer:
+    def __init__(self, fps=20):
+        self.fps = fps
+    
+    def analyze(self, distances, timestamps):
+        if len(distances) < 20: 
+            return None
+        
+        d = np.array(distances)
+        t = np.array(timestamps)
+        duration = max(t[-1] - t[0], 0.1)
+        fs = len(d) / duration
+        
+        # ── SİNYAL TEMİZLEME ──
+        def lowpass_filter(data, cutoff, fs, order=3):
+            nyq = 0.5 * fs
+            if cutoff >= nyq: cutoff = nyq * 0.9
+            b, a = butter(order, cutoff/nyq, btype='low')
+            return lfilter(b, a, data)
+        
+        try:
+            d_filt = lowpass_filter(d, 4.0, fs)
+        except:
+            d_filt = d
+
+        # ── YÜKSEK HASSASİYETLİ TEPE TESPİTİ (PROMINENCE) ──
+        # d_filt zaten (dist / hand_size) birimindedir.
+        # Belirginlik (Prominence) 0.08: Çevresinden el boyunun %8'i kadar yükselen her dalgayı vuruş sayar.
+        peaks, properties = find_peaks(d_filt, prominence=0.08, distance=int(fs * 0.1))
+        
+        if len(peaks) < 3:
+            # Sinyal kalitesi kontrolü
+            if np.ptp(d_filt) < 0.15:
+                # Hareket çok küçük veya el çok uzak
+                return {"error": "Hareket menzili çok dar. Lütfen parmaklarınızı daha geniş açın veya elinizi yaklaştırın."}
+            return None
+
+        # Metrik 1: Vuruş hızı (taps/sn)
+        tap_rate = len(peaks) / duration
+        
+        # Metrik 2: Amplitüd azalması (Prominences üzerinden Trend)
+        # Prominences, vuruşun mutlak yüksekliğinden ziyade "ne kadar açılıp kapandığını" söyler.
+        prominences = properties['prominences']
+        x_idx = np.arange(len(prominences))
+        slope, intercept = np.polyfit(x_idx, prominences, 1)
+        
+        # Toplam kayıp tahmini (İlk vuruşun belirginliğine göre)
+        # intercept burada ilk vuruşun beklenen belirginliğidir.
+        total_decay = -slope * len(peaks) / (intercept + 1e-6)
+        amp_decay = max(0.0, float(total_decay))
+            
+        # Metrik 3: Ritim Değişkenliği (CoV)
+        intervals = np.diff(t[peaks])
+        cov = np.std(intervals) / (np.mean(intervals) + 1e-6)
+            
+        # MDS-UPDRS Puanlama
+        score = self._compute_updrs(tap_rate, amp_decay, cov)
+        
+        # Renk ve Şiddet
+        severities = {
+            4: ("şiddetli", "#f87171"),
+            3: ("belirgin", "#f87171"),
+            2: ("orta", "#fb923c"),
+            1: ("hafif", "#fbbf24"),
+            0: ("normal", "#4ade80")
+        }
+        sev, col = severities.get(score, ("normal", "#4ade80"))
+            
+        recommendations = {
+            0: "Vuruş hızı ve genliği normal sınırlarda. (MDS-UPDRS Sınıf 0: Normal)",
+            1: "Hafif yavaşlama veya genlik azalması saptandı. (MDS-UPDRS Sınıf 1: Hafif)",
+            2: "Belirgin yorulma ve vuruş genliğinde daralma. (MDS-UPDRS Sınıf 2: Orta)",
+            3: "Ciddi hız kaybı ve vuruş sönümlenmesi. (MDS-UPDRS Sınıf 3: Belirgin)",
+            4: "Vuruş düzeni sürdürülemiyor. (MDS-UPDRS Sınıf 4: Şiddetli)"
+        }
+        
+        return {
+            "tap_rate": round(tap_rate, 2),
+            "amp_decay_pct": round(amp_decay * 100, 1),
+            "rhythm_cov": round(cov, 3),
+            "updrs_score": score,
+            "severity": sev,
+            "recommendation": recommendations.get(score, "Analiz tamamlandı."),
+            "color": col,
+            "duration": round(duration, 1),
+            "tap_count": len(peaks),
+            "risk_score": round(score * 25, 1) 
+        }
+    
+    def _compute_updrs(self, rate, decay, cov):
+        # MDS-UPDRS Part III Item 3.4 (Finger Tapping) Standartlarına Göre Puanlama
+        # 0: Normal, 1: Hafif, 2: Orta, 3: Belirgin, 4: Şiddetli
+        
+        # Hız (Speed)
+        if rate < 1.0: s1 = 4
+        elif rate < 1.5: s1 = 3
+        elif rate < 2.2: s1 = 2
+        elif rate < 3.2: s1 = 1
+        else: s1 = 0
+        
+        # Genlik Kaybı (Amplitude Decrement)
+        if decay > 0.55: s2 = 4
+        elif decay > 0.40: s2 = 3
+        elif decay > 0.25: s2 = 2
+        elif decay > 0.12: s2 = 1
+        else: s2 = 0
+        
+        # Ritim (Rhythm)
+        if cov > 0.50: s3 = 4
+        elif cov > 0.35: s3 = 3
+        elif cov > 0.22: s3 = 2
+        elif cov > 0.12: s3 = 1
+        else: s3 = 0
+        
+        # Klinik ağırlıklı ortalama (Hız ve Genlik %90 baskındır)
+        final_score = round((s1 * 0.45) + (s2 * 0.45) + (s3 * 0.10))
+        return min(4, final_score)
+
+tapping_analyzer = BradikineziaAnalyzer(fps=20)
 
 def preprocess(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -128,34 +289,33 @@ def preprocess(image_bytes):
     arr = np.array(img, dtype=np.float32) / 255.0
     return np.expand_dims(arr, axis=0)
 
-def analyze_tremor(positions, timestamps):
-    if len(positions) < 30: # 15 yerine en az 2 saniyelik veri
+def analyze_tremor(positions, timestamps, hand_sizes):
+    if len(positions) < 30: 
         return None
     
     positions  = np.array(positions)
     timestamps = np.array(timestamps)
-    duration   = max(timestamps[-1] - timestamps[0], 0.1)
-    fs         = len(positions) / duration  # Örnekleme hızı (FPS)
+    h_sizes    = np.array(hand_sizes) if hand_sizes else np.array([1.0])
     
-    # Sinyali merkezle (DC bileşenini çıkar)
-    # Kritik: X ve Y eksenlerindeki hareketlerin bileşkesi üzerinden gidelim
-    # Hareketin hızındaki değişimlere odaklanmak titremeyi daha iyi yakalar
+    avg_h_size = np.mean(h_sizes) if len(h_sizes) > 0 else 0.1
+    duration   = max(timestamps[-1] - timestamps[0], 0.1)
+    fs         = len(positions) / duration 
+    
+    # ── SİNYAL TEMİZLEME ──
     x = positions[:, 0] - np.mean(positions[:, 0])
     y = positions[:, 1] - np.mean(positions[:, 1])
     
-    # ── BANDPASS FILTRE (2Hz - 12Hz) ──
     def bandpass_filter(data, lowcut, highcut, fs, order=3):
         nyq = 0.5 * fs
         low = lowcut / nyq
         high = highcut / nyq
-        # Nyquist sınırı kontrolü (örnekleme hızı düşükse yüksek kesimi daralt)
         if high >= 1.0: high = 0.95
         b, a = butter(order, [low, high], btype='band')
         return lfilter(b, a, data)
 
     try:
-        x_filt = bandpass_filter(x, 2.0, 12.0, fs)
-        y_filt = bandpass_filter(y, 2.0, 12.0, fs)
+        x_filt = bandpass_filter(x, 2.0, 15.0, fs)
+        y_filt = bandpass_filter(y, 2.0, 15.0, fs)
     except:
         x_filt = x; y_filt = y
 
@@ -163,58 +323,96 @@ def analyze_tremor(positions, timestamps):
     N = len(x_filt)
     yf = fft(x_filt)
     xf = fftfreq(N, 1 / fs)
-    
-    # Pozitif frekansları al ve 2-12Hz arasını seç
-    pos_mask = (xf > 0) & (xf < 12)
+    pos_mask = (xf > 2) & (xf < 15)
     xf_pos = xf[pos_mask]
     yf_pos = np.abs(yf[pos_mask])
     
-    if len(xf_pos) > 0:
-        peak_idx = np.argmax(yf_pos)
-        frequency = float(xf_pos[peak_idx])
-    else:
-        frequency = 0.0
+    frequency = float(xf_pos[np.argmax(yf_pos)]) if len(xf_pos) > 0 else 0.0
 
-    # Amplitüd: Filtrelenmiş sinyalin standart sapması (yoğunluk)
-    amplitude = float(np.std(x_filt) + np.std(y_filt))
+    # ── NORMALİZE AMPLİTÜD (BİLİMSEL NORMALİZASYON) ──
+    # Piksellerin standart sapmasını el boyutuna (wrist-mcp) oranlıyoruz
+    # Bu değişken, elin kameraya uzaklığından bağımsız hale gelir.
+    std_x = np.std(x_filt)
+    std_y = np.std(y_filt)
+    raw_amplitude = float(std_x + std_y)
     
-    # Parkinson Kriterleri: 4-6 Hz arası ritmik titremeler tipiktir
-    is_parkinson_range = 3.5 <= frequency <= 6.5
+    # Normalizasyon: (Std Dev / Avg Hand Size) * 100 (Yüzdelik oran)
+    norm_amplitude_pct = (raw_amplitude / (avg_h_size + 1e-6)) * 100
     
-    if amplitude > 10 and is_parkinson_range:
-        sev="şiddetli"; risk="yüksek"; score=min(98, 70 + amplitude*1.5 + (6-abs(frequency-5))*5); col="#f87171"
-    elif amplitude > 6 and is_parkinson_range:
-        sev="orta"; risk="orta-yüksek"; score=min(85, 50 + amplitude*2); col="#fb923c"
-    elif amplitude > 3:
-        if is_parkinson_range:
-            sev="hafif"; risk="orta"; score=min(60, 30 + amplitude*3); col="#fbbf24"
-        else:
-            sev="hafif (atipik)"; risk="düşük"; score=min(35, 10 + amplitude*2); col="#facc15"
-    else:
-        sev="normal"; risk="çok düşük"; score=min(15, amplitude*4); col="#4ade80"
+    # Parkinson Kriterleri: 3.5 - 7.5 Hz arası kritik
+    is_parkinson_freq = 3.5 <= frequency <= 7.5
+    
+    # MDS-UPDRS Uyumlu Puanlama (Normalleştirilmiş Genlik Üzerinden)
+    # 0: < 2% , 1: 2-5%, 2: 5-10%, 3: 10-20%, 4: > 20%
+    if norm_amplitude_pct < 2.5: score = 0
+    elif norm_amplitude_pct < 6.0: score = 1
+    elif norm_amplitude_pct < 12.0: score = 2
+    elif norm_amplitude_pct < 25.0: score = 3
+    else: score = 4
+    
+    # Risk Puanı (Frekans ağırlıklı)
+    # Eğer frekans Parkinson bandındaysa risk puanı katlanır
+    risk_factor = 1.0
+    if is_parkinson_freq:
+        risk_factor = 1.5 if frequency < 6.5 else 1.2
         
-    return {"amplitude":round(amplitude,2),"frequency":round(frequency,2),
-            "severity":sev,"risk":risk,"risk_score":round(score,1),
-            "color":col,"duration":round(duration,1),"sample_count":len(positions),
-            "is_parkinson_freq": is_parkinson_range}
+    risk_score = min(100.0, score * 25.0 * risk_factor)
+    
+    severities = {
+        4: ("şiddetli", "#f87171"),
+        3: ("belirgin", "#f87171"),
+        2: ("orta", "#fb923c"),
+        1: ("hafif", "#fbbf24"),
+        0: ("normal", "#4ade80")
+    }
+    sev, col = severities.get(score, ("normal", "#4ade80"))
+    
+    # Klinik Öneri
+    if score >= 3 and is_parkinson_freq:
+        rec = "Kritik frekans bandında şiddetli titreme. En kısa sürede uzman hekim değerlendirmesi önerilir."
+    elif is_parkinson_freq and score >= 1:
+        rec = "Parkinson ile uyumlu frekans aralığında titreme aktivitesi saptandı. Takip önerilir."
+    elif score >= 2:
+        rec = "Belirgin titreme saptandı ancak frekans atipik (Fizyolojik titreme olasılığı)."
+    else:
+        rec = "Titreme seviyesi normal/fizyolojik sınırlarda."
+        
+    return {
+        "amplitude": round(raw_amplitude, 1),
+        "norm_amp_pct": round(norm_amplitude_pct, 1),
+        "frequency": round(frequency, 2),
+        "severity": sev,
+        "risk": "Yüksek" if risk_score > 60 else "Orta" if risk_score > 30 else "Düşük",
+        "risk_score": round(risk_score, 1),
+        "color": col,
+        "recommendation": rec,
+        "duration": round(duration, 1),
+        "is_parkinson_freq": is_parkinson_freq,
+        "updrs_score": score
+    }
 
-def detect_hand(frame):
-    # ── YÖNTEM 1: MEDIAPIPE (Varsayılan) ──
-    if MP_AVAILABLE and hands:
+def get_landmarks(frame):
+    if not MP_AVAILABLE: return None
+    try:
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+        res = detector.detect(mp_image)
+        if res.hand_landmarks:
+            return res.hand_landmarks[0]
+    except:
+        pass
+    return None
+
+def detect_hand(frame, landmarks=None):
+    if landmarks:
         try:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = hands.process(frame_rgb)
-            if results.multi_hand_landmarks:
-                hand_lms = results.multi_hand_landmarks[0]
-                itip = hand_lms.landmark[8] # İşaret parmağı ucu
-                h, w, _ = frame.shape
-                cx, cy = int(itip.x * w), int(itip.y * h)
-                mp_draw.draw_landmarks(frame, hand_lms, mp_hands.HAND_CONNECTIONS)
-                cv2.circle(frame, (cx,cy), 10, (99,179,237), 2)
-                return cx, cy
-        except:
-            pass
-
+            h, w = frame.shape[:2]
+            itip = landmarks[8]
+            cx, cy = int(itip.x * w), int(itip.y * h)
+            cv2.circle(frame, (cx,cy), 10, (99,179,237), 2)
+            return cx, cy
+        except: pass
+    
     # ── YÖNTEM 2: HSV RENK TAKİBİ (Fallback) ──
     hsv    = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     lower  = np.array([0,  30,  60], dtype=np.uint8)
@@ -236,6 +434,34 @@ def detect_hand(frame):
                 return cx, cy
     return None, None
 
+def get_finger_distance_from_lms(frame, landmarks):
+    if not landmarks: return None
+    try:
+        # Landmarks
+        thumb_tip = landmarks[4]
+        index_tip = landmarks[8]
+        wrist     = landmarks[0]
+        middle_mcp = landmarks[9]
+        
+        # Screen coords for visualization
+        h, w = frame.shape[:2]
+        t_pos = (int(thumb_tip.x * w), int(thumb_tip.y * h))
+        i_pos = (int(index_tip.x * w), int(index_tip.y * h))
+        
+        # Euclidean distance (normalized by hand size)
+        hand_size = np.sqrt((wrist.x - middle_mcp.x)**2 + (wrist.y - middle_mcp.y)**2)
+        raw_dist  = np.sqrt((thumb_tip.x - index_tip.x)**2 + (thumb_tip.y - index_tip.y)**2)
+        norm_dist = raw_dist / (hand_size + 1e-6)
+        
+        # Draw
+        cv2.line(frame, t_pos, i_pos, (74, 222, 128), 2)
+        cv2.circle(frame, t_pos, 5, (99, 179, 237), -1)
+        cv2.circle(frame, i_pos, 5, (99, 179, 237), -1)
+        
+        return norm_dist
+    except:
+        return None
+
 def generate_frames():
     while True:
         frame = camera.get_frame()
@@ -252,24 +478,74 @@ def generate_frames():
 
         h, w = frame.shape[:2]
 
-        cx, cy = detect_hand(frame)
+        # Landmark Tespiti (Tasks API - Tek Geçiş)
+        landmarks = get_landmarks(frame)
+        
+        cx, cy = detect_hand(frame, landmarks)
         hand_detected = cx is not None
+        
+        norm_dist = get_finger_distance_from_lms(frame, landmarks)
+        pair_detected = norm_dist is not None
 
         with tremor_lock:
-            is_active = tremor_state["active"]
+            is_tremor_active = tremor_state["active"]
+        with tapping_lock:
+            is_tapping_active = tapping_state["active"]
 
-        if is_active and hand_detected:
+        # Tremor Kaydı
+        if is_tremor_active and hand_detected:
+            # Mesafe normalizasyonu için el boyutu hesapla (Wrist -> Middle MCP)
+            h_size = 0.1
+            if landmarks:
+                try:
+                    wrist = landmarks[0]
+                    mcp = landmarks[9] # Middle MCP
+                    h_size = np.sqrt((wrist.x - mcp.x)**2 + (wrist.y - mcp.y)**2)
+                except: pass
+
             with tremor_lock:
                 tremor_state["positions"].append([float(cx), float(cy)])
                 tremor_state["timestamps"].append(time.time())
+                tremor_state["hand_sizes"].append(float(h_size))
+                
                 if len(tremor_state["timestamps"]) > 1:
                     elapsed = tremor_state["timestamps"][-1] - tremor_state["timestamps"][0]
                     if elapsed >= 5.0:
-                        result = analyze_tremor(tremor_state["positions"], tremor_state["timestamps"])
-                        tremor_state["result"] = result
+                        res = analyze_tremor(
+                            tremor_state["positions"], 
+                            tremor_state["timestamps"],
+                            tremor_state["hand_sizes"]
+                        )
+                        if res:
+                            res["medication"] = tremor_state["medication"]
+                        tremor_state["result"] = res
                         tremor_state["active"] = False
                         tremor_state["positions"] = []
                         tremor_state["timestamps"] = []
+                        tremor_state["hand_sizes"] = []
+
+        # Tapping (Bradikinezi) Kaydı
+        if is_tapping_active and pair_detected:
+            with tapping_lock:
+                # EMA Filtresi (Jitter temizleme)
+                prev = tapping_state["distances"][-1] if tapping_state["distances"] else norm_dist
+                alpha = 0.4 # Yumuşatma katsayısı
+                smooth_dist = alpha * norm_dist + (1 - alpha) * prev
+                
+                tapping_state["distances"].append(float(smooth_dist))
+                tapping_state["timestamps"].append(time.time())
+                tapping_state["current_dist"] = float(smooth_dist)
+                
+                if len(tapping_state["timestamps"]) > 1:
+                    elapsed = tapping_state["timestamps"][-1] - tapping_state["timestamps"][0]
+                    if elapsed >= 10.0: # Bradikinezi testi genellikle 10sn sürer
+                        res = tapping_analyzer.analyze(tapping_state["distances"], tapping_state["timestamps"])
+                        if res:
+                            res["medication"] = tapping_state["medication"]
+                        tapping_state["result"] = res
+                        tapping_state["active"] = False
+                        tapping_state["distances"] = []
+                        tapping_state["timestamps"] = []
 
         # Overlay
         overlay = frame.copy()
@@ -281,13 +557,24 @@ def generate_frames():
             count   = len(tremor_state["timestamps"])
             elapsed = tremor_state["timestamps"][-1]-tremor_state["timestamps"][0] if count>1 else 0
 
+        with tapping_lock:
+            t_active = tapping_state["active"]
+            t_count  = len(tapping_state["distances"])
+            t_elapsed = tapping_state["timestamps"][-1]-tapping_state["timestamps"][0] if t_count>1 else 0
+
         if active and count > 1:
             remaining = max(0, 5.0 - elapsed)
             progress  = min(int((elapsed/5.0)*(w-16)), w-16)
-            cv2.putText(frame, f"KAYIT: {remaining:.1f}s", (8,24),
+            cv2.putText(frame, f"TITREME KAYIT: {remaining:.1f}s", (8,24),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (74,222,128), 2)
             cv2.rectangle(frame, (8,28), (8+progress,33), (74,222,128), -1)
-        elif hand_detected:
+        elif t_active and t_count > 1:
+            remaining = max(0, 10.0 - t_elapsed)
+            progress  = min(int((t_elapsed/10.0)*(w-16)), w-16)
+            cv2.putText(frame, f"VURUS KAYIT: {remaining:.1f}s", (8,24),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (251,146,60), 2)
+            cv2.rectangle(frame, (8,28), (8+progress,33), (251,146,60), -1)
+        elif hand_detected or pair_detected:
             cv2.putText(frame, "El tespit edildi", (8,24),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (99,179,237), 2)
         else:
@@ -323,6 +610,16 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/camera/open", methods=["POST"])
+def camera_open():
+    success = camera.start()
+    return jsonify({"status": "opened" if success else "failed"})
+
+@app.route("/camera/close", methods=["POST"])
+def camera_close():
+    camera.stop()
+    return jsonify({"status": "closed"})
+
 @app.route("/video_feed")
 def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
@@ -347,8 +644,9 @@ def tremor_stop():
         tremor_state["active"] = False
         pos = tremor_state["positions"].copy()
         ts  = tremor_state["timestamps"].copy()
-        med = tremor_state["medication"]
-    result = analyze_tremor(pos, ts)
+        hs  = tremor_state["hand_sizes"].copy()
+        med  = tremor_state["medication"]
+    result = analyze_tremor(pos, ts, hs)
     if result:
         result["medication"] = med
     with tremor_lock:
@@ -369,6 +667,50 @@ def tremor_result():
         "medication": med,
         "count": count,
         "elapsed": round(elapsed, 1)
+    })
+
+# ── TAPPING (BRADIKINEZI) ENDPOINTS ──
+@app.route("/tapping/start", methods=["POST"])
+def tapping_start():
+    data = request.json or {}
+    med_status = data.get("medication", False)
+    with tapping_lock:
+        tapping_state.update({
+            "active": True,
+            "distances": [],
+            "timestamps": [],
+            "result": None,
+            "medication": med_status
+        })
+    return jsonify({"status":"started", "medication": med_status})
+
+@app.route("/tapping/stop", methods=["POST"])
+def tapping_stop():
+    with tapping_lock:
+        tapping_state["active"] = False
+        dist = tapping_state["distances"].copy()
+        ts  = tapping_state["timestamps"].copy()
+    result = tapping_analyzer.analyze(dist, ts)
+    with tapping_lock:
+        tapping_state["result"] = result
+    return jsonify({"status":"stopped","result":result})
+
+@app.route("/tapping/result")
+def tapping_result():
+    with tapping_lock:
+        active  = tapping_state["active"]
+        result  = tapping_state["result"]
+        med     = tapping_state["medication"]
+        count   = len(tapping_state["distances"])
+        elapsed = tapping_state["timestamps"][-1]-tapping_state["timestamps"][0] if count>1 else 0
+        current_v = tapping_state["current_dist"]
+    return jsonify({
+        "active": active,
+        "result": result,
+        "medication": med,
+        "count": count,
+        "elapsed": round(elapsed, 1),
+        "current_dist": current_v
     })
 
 @app.route("/metrics")
