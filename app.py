@@ -322,15 +322,19 @@ def preprocess(image_bytes):
     arr = np.array(img, dtype=np.float32) / 255.0
     return np.expand_dims(arr, axis=0)
 
-def analyze_tremor(positions, timestamps, hand_sizes):
+def analyze_tremor(positions, timestamps, hand_sizes_norm, frame_dim=(640, 480)):
     if len(positions) < 30: 
         return None
     
     positions  = np.array(positions)
     timestamps = np.array(timestamps)
-    h_sizes    = np.array(hand_sizes) if hand_sizes else np.array([1.0])
+    h_norm     = np.array(hand_sizes_norm) if hand_sizes_norm else np.array([0.15])
     
-    avg_h_size = np.mean(h_sizes) if len(h_sizes) > 0 else 0.1
+    w, h = frame_dim
+    # Normalize birimi piksele çevir (El boyutu pikselleri)
+    # Wrist ve MCP farkı genellikle frame'in %15-30'u kadardır
+    avg_h_size_px = np.mean(h_norm) * np.sqrt(w**2 + h**2)
+    
     duration   = max(timestamps[-1] - timestamps[0], 0.1)
     fs         = len(positions) / duration 
     
@@ -360,43 +364,52 @@ def analyze_tremor(positions, timestamps, hand_sizes):
     xf_pos = xf[pos_mask]
     yf_pos = np.abs(yf[pos_mask])
     
-    frequency = float(xf_pos[np.argmax(yf_pos)]) if len(xf_pos) > 0 else 0.0
+    frequency = 0.0
+    is_valid_peak = False
+    
+    if len(xf_pos) > 0:
+        peak_idx = np.argmax(yf_pos)
+        peak_val = yf_pos[peak_idx]
+        avg_noise = np.mean(yf_pos)
+        
+        # Sinyal-Gürültü Oranı (SNR) Filtresi: Tepe noktası ortalamadan en az 2.5 kat büyük olmalı
+        if peak_val > avg_noise * 2.5:
+            frequency = float(xf_pos[peak_idx])
+            is_valid_peak = True
 
-    # ── NORMALİZE AMPLİTÜD (BİLİMSEL NORMALİZASYON) ──
-    # Piksellerin standart sapmasını el boyutuna (wrist-mcp) oranlıyoruz
-    # Bu değişken, elin kameraya uzaklığından bağımsız hale gelir.
+    # ── NORMALİZE AMPLİTÜD ──
     std_x = np.std(x_filt)
     std_y = np.std(y_filt)
     raw_amplitude = float(std_x + std_y)
     
-    # Normalizasyon: (Std Dev / Avg Hand Size) * 100 (Yüzdelik oran)
-    norm_amplitude_pct = (raw_amplitude / (avg_h_size + 1e-6)) * 100
+    # Normalizasyon: (Std Dev Pixels / Hand Size Pixels) * 100
+    norm_amplitude_pct = (raw_amplitude / (avg_h_size_px + 1e-6)) * 100
     
+    # ── NOISE FLOOR (ÖNEMLİ!) ──
+    # Eğer hareket el boyutunun %0.8'inden küçükse, bunu 'Normal jitter' kabul et.
+    if norm_amplitude_pct < 0.8:
+        norm_amplitude_pct = norm_amplitude_pct * 0.2 # Baskıla
+        frequency = 0.0
+        is_valid_peak = False
+
     # Parkinson Kriterleri: 3.5 - 7.5 Hz arası kritik
-    is_parkinson_freq = 3.5 <= frequency <= 7.5
+    is_parkinson_freq = (3.5 <= frequency <= 7.5) and is_valid_peak
     
-    # MDS-UPDRS Uyumlu Puanlama (Normalleştirilmiş Genlik Üzerinden)
+    # MDS-UPDRS Puanlama (Normalize Genlik Üzerinden)
     if norm_amplitude_pct < 1.0: score = 0
-    elif norm_amplitude_pct < 3.5: score = 1
-    elif norm_amplitude_pct < 10.0: score = 2
-    elif norm_amplitude_pct < 20.0: score = 3
+    elif norm_amplitude_pct < 3.0: score = 1
+    elif norm_amplitude_pct < 8.0: score = 2
+    elif norm_amplitude_pct < 15.0: score = 3
     else: score = 4
     
-    # Seans Belleğine Kaydet
-    m_key = "med" if tremor_state["medication"] else "none"
-    session_data["tremor"][m_key] = {
-        "freq": frequency,
-        "amp": norm_amplitude_pct,
-        "score": score
-    }
-
     # Risk Puanı (Frekans ağırlıklı)
     risk_factor = 1.0
     if is_parkinson_freq:
         risk_factor = 1.8 if frequency < 6.0 else 1.4
-        
-    risk_score = min(100.0, score * 25.0 * risk_factor)
     
+    risk_score = min(100.0, score * 25.0 * risk_factor)
+    if norm_amplitude_pct < 0.5: risk_score = 0.0 # Kesin temiz
+
     severities = {
         4: ("şiddetli", "#f87171"),
         3: ("belirgin", "#f87171"),
@@ -408,20 +421,20 @@ def analyze_tremor(positions, timestamps, hand_sizes):
     
     # Klinik Öneri
     if score >= 3 and is_parkinson_freq:
-        rec = "Kritik frekans bandında (Parkinsonian) şiddetli titreme. Klinik takip şarttır."
+        rec = "Kritik frekans bandında şiddetli titreme. Klinik takip önerilir."
     elif is_parkinson_freq and score >= 1:
-        rec = "Parkinson ile uyumlu düşük frekanslı ritmik titreme aktivitesi saptandı."
+        rec = "Parkinson ile uyumlu ritmik titreme aktivitesi saptandı."
     elif score >= 1:
-        rec = f"Düşük amplitüdlü {frequency} Hz titreme saptandı (Fizyolojik olasılığı yüksek)."
+        rec = f"Düşük şiddetli {frequency:.1f} Hz titreme (Fizyolojik olabilir)."
     else:
-        rec = "Titreme aktivitesi klinik sınırların altında."
+        rec = "Titreme aktivitesi normal sınırlar içerisinde."
         
     return {
         "amplitude": round(raw_amplitude, 1),
         "norm_amp_pct": round(norm_amplitude_pct, 1),
         "frequency": round(frequency, 2),
         "severity": sev,
-        "risk": "Kritik" if risk_score > 75 else "Yüksek" if risk_score > 50 else "Düşük",
+        "risk": "Kritik" if risk_score > 75 else "Yüksek" if risk_score > 50 else "Düşük" if risk_score > 10 else "Normal",
         "risk_score": round(risk_score, 1),
         "color": col,
         "recommendation": rec,
@@ -447,11 +460,32 @@ def detect_hand(frame, landmarks=None):
     if landmarks:
         try:
             h, w = frame.shape[:2]
-            itip = landmarks[8]
-            cx, cy = int(itip.x * w), int(itip.y * h)
-            cv2.circle(frame, (cx,cy), 10, (99,179,237), 2)
+            # 4 Parmak Ucu: İşaret (8), Orta (12), Yüzük (16), Serçe (20)
+            finger_indices = [8, 12, 16, 20]
+            pts_x = []
+            pts_y = []
+            
+            for idx in finger_indices:
+                pt = landmarks[idx]
+                px, py = int(pt.x * w), int(pt.y * h)
+                pts_x.append(pt.x)
+                pts_y.append(pt.y)
+                # Her parmağa küçük bir nokta çiz
+                cv2.circle(frame, (px, py), 4, (74, 222, 128), -1)
+            
+            # Ortalama Merkez (Centroid)
+            avg_x = sum(pts_x) / len(pts_x)
+            avg_y = sum(pts_y) / len(pts_y)
+            
+            cx, cy = int(avg_x * w), int(avg_y * h)
+            # Ana Takip Halkası (Merkeze)
+            cv2.circle(frame, (cx, cy), 12, (99, 179, 237), 2)
+            cv2.circle(frame, (cx, cy), 2, (99, 179, 237), -1)
+            
             return cx, cy
-        except: pass
+        except Exception as e:
+            print(f"DEBUG: detect_hand error: {e}")
+            pass
     
     # ── YÖNTEM 2: HSV RENK TAKİBİ (Fallback) ──
     hsv    = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -554,10 +588,15 @@ def generate_frames():
                         res = analyze_tremor(
                             tremor_state["positions"], 
                             tremor_state["timestamps"],
-                            tremor_state["hand_sizes"]
+                            tremor_state["hand_sizes"],
+                            frame_dim=(w, h)
                         )
                         if res:
                             res["medication"] = tremor_state["medication"]
+                            # Seans belleğine kaydet
+                            m_key = "med" if tremor_state["medication"] else "none"
+                            session_data["tremor"][m_key] = res
+                            
                         tremor_state["result"] = res
                         tremor_state["active"] = False
                         tremor_state["positions"] = []
@@ -596,6 +635,13 @@ def generate_frames():
             active  = tremor_state["active"]
             count   = len(tremor_state["timestamps"])
             elapsed = tremor_state["timestamps"][-1]-tremor_state["timestamps"][0] if count>1 else 0
+            # EMA Smoothing for Tracking (Jitter temizleme)
+            if active and hand_detected:
+                if len(tremor_state["positions"]) > 0:
+                    alpha = 0.5
+                    last_x, last_y = tremor_state["positions"][-1]
+                    cx = alpha * cx + (1 - alpha) * last_x
+                    cy = alpha * cy + (1 - alpha) * last_y
 
         with tapping_lock:
             t_active = tapping_state["active"]
@@ -689,9 +735,12 @@ def tremor_stop():
         ts  = tremor_state["timestamps"].copy()
         hs  = tremor_state["hand_sizes"].copy()
         med  = tremor_state["medication"]
-    result = analyze_tremor(pos, ts, hs)
+    result = analyze_tremor(pos, ts, hs, frame_dim=(640, 480))
     if result:
         result["medication"] = med
+        # Seans belleğine kaydet
+        m_key = "med" if med else "none"
+        session_data["tremor"][m_key] = result
     with tremor_lock:
         tremor_state["result"] = result
     return jsonify({"status":"stopped","result":result})
@@ -775,19 +824,21 @@ def get_clinical_report():
     report = {
         "comparisons": [],
         "overall_status": "Veri Bekleniyor",
-        "timestamp": time.strftime("%H:%M:%S")
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
     }
     
-    # Titreme Kıyaslaması
+    # Titreme Kıyaslaması (Genlik üzerinden hassas kıyas)
     if t_data["none"] and t_data["med"]:
-        diff = t_data["none"]["score"] - t_data["med"]["score"]
-        improvement = (diff / max(t_data["none"]["score"], 1)) * 100
+        off_amp = t_data["none"]["norm_amp_pct"]
+        on_amp = t_data["med"]["norm_amp_pct"]
+        # İyileşme: (Eski Genlik - Yeni Genlik) / Eski Genlik
+        improvement = ((off_amp - on_amp) / max(off_amp, 0.1)) * 100
         report["comparisons"].append({
             "type": "Titreme",
-            "off_score": t_data["none"]["score"],
-            "on_score": t_data["med"]["score"],
-            "improvement": round(improvement, 1),
-            "status": "Olumlu Yanıt" if improvement >= 25 else "Kısıtlı Yanıt"
+            "off_score": t_data["none"]["updrs_score"],
+            "on_score": t_data["med"]["updrs_score"],
+            "improvement": round(max(0, improvement), 1),
+            "status": "Olumlu Yanıt" if improvement >= 20 else "Kısıtlı Yanıt"
         })
 
     # Vuruş Kıyaslaması
@@ -804,11 +855,16 @@ def get_clinical_report():
     
     if report["comparisons"]:
         avg_imp = sum(c["improvement"] for c in report["comparisons"]) / len(report["comparisons"])
+        report["overall_improvement"] = round(avg_imp, 1)
         if avg_imp >= 30: report["overall_status"] = "Optimal Tedavi Yanıtı"
         elif avg_imp >= 15: report["overall_status"] = "Kısmi Tedavi Yanıtı"
         else: report["overall_status"] = "Düşük Tedavi Yanıtı"
         
     return jsonify(report)
+
+@app.route("/<path:filename>")
+def serve_static(filename):
+    return send_from_directory(".", filename)
 
 if __name__ == "__main__":
     print(f"\n  http://127.0.0.1:5000")
