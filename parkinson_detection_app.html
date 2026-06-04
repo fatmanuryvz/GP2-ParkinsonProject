@@ -1500,7 +1500,11 @@
       .diet-grid {
         grid-template-columns: 1fr;
       }
-      .info-btn {
+      .notes-editor-card > div {
+        grid-template-columns: 1fr !important;
+      }
+    }
+      .help-icon-btn {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--border);
         color: var(--muted);
@@ -1514,7 +1518,7 @@
         font-size: 0.8rem;
         transition: all 0.3s ease;
       }
-      .info-btn:hover {
+      .help-icon-btn:hover {
         background: var(--accent);
         color: white;
         border-color: var(--accent);
@@ -1559,6 +1563,336 @@
         .card { box-shadow: none !important; border: 1px solid #eee !important; break-inside: avoid; background: white !important; color: black !important; }
         body { background: white !important; color: black !important; }
       }
+
+      /* Doktor Paneli ve Giriş UI */
+      .dropdown-item {
+        transition: background 0.2s, color 0.2s;
+      }
+      .dropdown-item:hover {
+        background: rgba(99, 179, 237, 0.1);
+        color: var(--accent) !important;
+      }
+      .doctor-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 24px;
+        margin-top: 10px;
+      }
+      .patient-list-sidebar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 700px;
+        overflow-y: auto;
+      }
+      .patient-item-card {
+        background: var(--surface2);
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .patient-item-card:hover, .patient-item-card.active {
+        border-color: var(--accent);
+        background: rgba(99, 179, 237, 0.05);
+      }
+      .patient-item-card .name {
+        font-weight: 700;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+      }
+      .patient-item-card .meta {
+        font-size: 0.7rem;
+        color: var(--muted);
+        font-family: var(--mono);
+      }
+      .doctor-content-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .doctor-welcome {
+        text-align: center;
+        padding: 80px 40px;
+        color: var(--muted);
+      }
+      .save-test-btn {
+        width: 100%;
+        margin-top: 10px;
+        padding: 10px;
+        background: linear-gradient(135deg, var(--accent2), #22c55e);
+        color: #0a1a0a;
+        border: none;
+        border-radius: 10px;
+        font-family: var(--sans);
+        font-weight: 800;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .save-test-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(74, 222, 128, 0.25);
+      }
+      .save-test-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .notes-editor-card {
+        background: rgba(14, 21, 37, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      }
+      .notes-editor-card textarea {
+        width: 100%;
+        height: 140px;
+        background: rgba(6, 9, 18, 0.6);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin-top: 10px;
+        margin-bottom: 8px;
+        resize: vertical;
+        transition: all 0.25s ease;
+      }
+      .notes-editor-card textarea:focus {
+        border-color: var(--accent);
+        background: rgba(6, 9, 18, 0.8);
+        box-shadow: 0 0 12px rgba(99, 179, 237, 0.15);
+        outline: none;
+      }
+      .notes-editor-card label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--accent);
+        display: block;
+      }
+      .doctor-action-btn {
+        padding: 12px 28px;
+        background: linear-gradient(135deg, var(--accent2), #059669);
+        border: none;
+        border-radius: 12px;
+        color: #05160e;
+        font-family: var(--sans);
+        font-weight: 800;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+      }
+      .doctor-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        filter: brightness(1.1);
+      }
+      .doctor-action-btn:active {
+        transform: translateY(0);
+      }
+      /* Patient Display Notes Banner */
+      .patient-notes-banner {
+        background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(99, 179, 237, 0.05));
+        border: 1px dashed var(--accent2);
+        border-radius: 18px;
+        padding: 20px;
+        margin-bottom: 24px;
+        display: none;
+      }
+      .patient-notes-banner.active {
+        display: block;
+        animation: fadeDown 0.4s ease both;
+      }
+      
+      /* FULL SCREEN LOGIN VIEW */
+      .login-screen-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 12000;
+        background: radial-gradient(circle at center, #0e172a 0%, #030712 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        opacity: 1;
+        pointer-events: auto;
+        overflow: hidden;
+      }
+      .login-screen-overlay.fade-out {
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(1.05) translateY(-20px);
+      }
+      
+      .login-bg-neural {
+        position: absolute;
+        inset: 0;
+        opacity: 0.15;
+        pointer-events: none;
+        background-image: radial-gradient(rgba(99, 179, 237, 0.2) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+      
+      .login-container-card {
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 28px;
+        padding: 40px;
+        max-width: 440px;
+        width: 100%;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+        position: relative;
+        z-index: 2;
+        animation: loginFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      
+      @keyframes loginFadeIn {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .login-logo-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .login-logo-title {
+        font-family: var(--sans);
+        font-weight: 800;
+        font-size: 2.2rem;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+      }
+      .login-logo-subtitle {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      
+      .role-selector-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+      .role-select-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .role-select-card:hover {
+        border-color: rgba(99, 179, 237, 0.3);
+        background: rgba(99, 179, 237, 0.03);
+        transform: translateY(-2px);
+      }
+      .role-select-card.active {
+        border-color: var(--accent);
+        background: rgba(99, 179, 237, 0.08);
+        box-shadow: 0 0 15px rgba(99, 179, 237, 0.15);
+      }
+      .role-select-card .icon {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .role-select-card .title {
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: var(--text);
+      }
+      .role-select-card .desc {
+        font-size: 0.65rem;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      
+      .login-input-group {
+        position: relative;
+        margin-bottom: 18px;
+      }
+      .login-input-group label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--accent);
+        letter-spacing: 0.8px;
+        display: block;
+        margin-bottom: 6px;
+      }
+      .login-input-field {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(6, 9, 18, 0.5);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text);
+        font-size: 0.9rem;
+        transition: all 0.25s ease;
+      }
+      .login-input-field:focus {
+        border-color: var(--accent);
+        background: rgba(6, 9, 18, 0.8);
+        box-shadow: 0 0 10px rgba(99, 179, 237, 0.15);
+        outline: none;
+      }
+      
+      .login-submit-btn {
+        width: 100%;
+        height: 48px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #060912;
+        border: none;
+        border-radius: 14px;
+        font-family: var(--sans);
+        font-weight: 800;
+        font-size: 0.92rem;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 15px rgba(99, 179, 237, 0.25);
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .login-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(99, 179, 237, 0.4);
+        filter: brightness(1.05);
+      }
+      .login-submit-btn:active {
+        transform: translateY(0);
+      }
+      
+      .login-footer-hints {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px dashed rgba(255,255,255,0.06);
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-align: center;
+        line-height: 1.6;
+      }
     </style>
 </head>
 
@@ -1579,8 +1913,62 @@
           <span class="status-dot offline" id="statusDot"></span>
           <span id="statusText">API kontrol ediliyor...</span>
         </span>
+        
+        <!-- Giriş Butonu -->
+        <div class="user-selector-container" style="position:relative">
+          <button class="info-btn" onclick="handleLoginClick()" id="currentUserBtn" style="background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#060912; font-weight:bold; border:none; border-radius:10px; padding:0 16px; width:auto; height:34px; line-height:34px; display:inline-flex; align-items:center; justify-content:center">
+            👤 Giriş Yap
+          </button>
+          <div class="user-dropdown-menu" id="userDropdown" style="display:none; position:absolute; right:0; top:42px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; min-width:150px; z-index:100; box-shadow:0 10px 30px rgba(0,0,0,0.5); padding:6px 0">
+            <a href="#" onclick="logout(); event.preventDefault();" style="display:block; padding:10px 16px; color:var(--danger); text-decoration:none; font-size:0.8rem; font-weight:bold" class="dropdown-item">🚪 Çıkış Yap</a>
+          </div>
+        </div>
+
+  <!-- GİRİŞ EKRANI (FULL SCREEN LOGIN VIEW) -->
+  <div class="login-screen-overlay" id="loginScreen">
+    <div class="login-bg-neural"></div>
+    <div class="login-container-card">
+      <div class="login-logo-header">
+        <span style="font-size: 3rem">🧠</span>
+        <h2 class="login-logo-title">NeuroScan</h2>
+        <p class="login-logo-subtitle">Parkinson Erken Tanı ve Takip Sistemi</p>
+      </div>
+
+      <div class="role-selector-row">
+        <div class="role-select-card" id="roleCardDoctor" onclick="selectLoginRole('doctor')">
+          <span class="icon">🩺</span>
+          <div class="title">Hekim Girişi</div>
+          <div class="desc">Hasta Takip & Not</div>
+        </div>
+        <div class="role-select-card" id="roleCardPatient" onclick="selectLoginRole('patient')">
+          <span class="icon">👤</span>
+          <div class="title">Hasta Girişi</div>
+          <div class="desc">Motor Analizleri</div>
+        </div>
+      </div>
+
+      <form id="loginForm" onsubmit="submitLoginForm(event)">
+        <div class="login-input-group">
+          <label for="loginUsername">Kullanıcı Adı</label>
+          <input type="text" id="loginUsername" class="login-input-field" placeholder="dr_ahmet veya fatma_demir" required autocomplete="username">
+        </div>
+        <div class="login-input-group">
+          <label for="loginPassword">Şifre</label>
+          <input type="password" id="loginPassword" class="login-input-field" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="login-submit-btn">
+          <span>🔒</span> Sisteme Güvenli Giriş Yap
+        </button>
+      </form>
+      
+      <div class="login-footer-hints">
+        Giriş yapmak için yukarıdaki kartlara tıklayarak deneme profillerini otomatik doldurabilirsiniz.
+      </div>
+    </div>
+  </div>
+
         <div class="header-badge">◞ MobileNetV2</div>
-        <button class="info-btn" onclick="openInfoModal()">🧠 Parkinson Hakkında</button>
+        <button class="info-btn" id="infoBtn" onclick="openInfoModal()">🧠 Parkinson Hakkında</button>
       </div>
     </header>
 
@@ -1623,19 +2011,39 @@
       </div>
     </div>
 
+    <!-- Hekim Notu Banner'ı -->
+    <div class="patient-notes-banner" id="patientNotesBanner">
+      <div style="display:flex; align-items:flex-start; gap:16px">
+        <div style="font-size:2.2rem; background:rgba(74,222,128,0.15); width:55px; height:55px; display:flex; align-items:center; justify-content:center; border-radius:14px; flex-shrink:0">🩺</div>
+        <div style="flex-grow:1">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+            <h3 style="font-size:1.05rem; font-weight:800; color:var(--text)" id="patientNotesTitle">Hekim Değerlendirme Notu</h3>
+            <span style="font-family:var(--mono); font-size:0.65rem; color:var(--accent2)" id="patientNotesDoctorName">Dr. Ahmet Yılmaz</span>
+          </div>
+          <p style="font-size:0.85rem; color:var(--text); line-height:1.6; margin-bottom:12px; font-family:var(--serif)" id="patientNotesContent">Yükleniyor...</p>
+          <div style="border-top:1px dashed var(--border); padding-top:10px; font-size:0.75rem; color:var(--muted); line-height:1.5">
+            <strong style="color:var(--accent3)">Önerilen Tedavi:</strong> <span id="patientNotesAdvise">Yükleniyor...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ANA SEKMELER -->
     <div class="main-tabs">
-      <button class="main-tab active" onclick="switchMainTab('drawing')">
+      <button class="main-tab active" id="drawingTabBtn" onclick="switchMainTab('drawing')">
         ✏️ Çizim Analizi
       </button>
-      <button class="main-tab" onclick="switchMainTab('tremor')">
+      <button class="main-tab" id="tremorTabBtn" onclick="switchMainTab('tremor')">
         🤚 El Titremesi Analizi
       </button>
-      <button class="main-tab" onclick="switchMainTab('tapping')">
+      <button class="main-tab" id="tappingTabBtn" onclick="switchMainTab('tapping')">
         👌 Bradikinezi Analizi
       </button>
-      <button class="main-tab" onclick="switchMainTab('report')">
+      <button class="main-tab" id="reportTabBtn" onclick="switchMainTab('report')">
         📊 Gelişmiş Rapor
+      </button>
+      <button class="main-tab" id="doctorTabBtn" onclick="switchMainTab('doctor')" style="display:none">
+        🩺 Hekim Paneli
       </button>
     </div>
 
@@ -1678,6 +2086,7 @@
                   <div class="prob-fill" id="parkinsonBar" style="background:var(--danger);width:0%"></div>
                 </div>
               </div>
+              <button class="save-test-btn" id="saveDrawingBtn" onclick="saveActiveTest('drawing')" style="display:none">📁 Sonucu Dosyama Kaydet</button>
               <div class="disclaimer">⚠ Bu sonuç bir yapay zeka tahminidir. Kesin tanı için nöroloji uzmanına
                 başvurunuz.</div>
             </div>
@@ -1766,7 +2175,7 @@
             <div class="card-title">
               <div class="card-icon" style="background:rgba(251,146,60,0.15)">🤚</div>Gerçek Zamanlı Titreme Analizi
             </div>
-            <button class="info-btn" onclick="openInfo('tremor')" title="Bilgi Al">ℹ</button>
+            <button class="help-icon-btn" onclick="openInfo('tremor')" title="Bilgi Al">ℹ</button>
           </div>
           <div class="card-body">
             <div class="camera-container" id="cameraContainer">
@@ -1899,7 +2308,7 @@
                 <div class="interpret-title"><span>💡</span> Klinik Değerlendirme Özeti</div>
                 <div class="interpret-text" id="tremorInterpretText">Analiz verileri işleniyor... Sonuçların anlamı burada görüntülenecektir.</div>
               </div>
-
+              <button class="save-test-btn" id="saveTremorBtn" onclick="saveActiveTest('tremor')" style="display:none">📁 Sonucu Dosyama Kaydet</button>
               <div class="disclaimer" style="margin-top:16px">⚠ Bu sonuç bir yapay zeka önizlemesidir. Kesin klinik teşhis ve tedavi kararı için lütfen nöroloji uzmanına danışınız.</div>
               
               <!-- AI ASİSTAN HUB -->
@@ -1969,7 +2378,7 @@
               <div class="card-icon" style="background:rgba(251,146,60,0.15)">👌</div>Parmak Vuruş Analizi (Bradikinezi)
             </div>
             <div style="display:flex; align-items:center; gap:12px">
-              <button class="info-btn" onclick="openInfo('tapping')" title="Bilgi Al">ℹ</button>
+              <button class="help-icon-btn" onclick="openInfo('tapping')" title="Bilgi Al">ℹ</button>
               <div style="display:flex; align-items:center; gap:10px">
                 <span style="font-size:0.6rem; color:var(--muted); font-weight:800">NORMAL</span>
                 <label class="switch">
@@ -2068,6 +2477,7 @@
                 <div style="margin-bottom:4px;color:var(--text);font-size:0.72rem;font-weight:600">UPDRS Puanlama:</div>
                 0: Normal • 1: Hafif Yavaş • 2: Erken Yorulma • 3: Belirgin Kesinti • 4: Sürdüremiyor
               </div>
+              <button class="save-test-btn" id="saveTappingBtn" onclick="saveActiveTest('tapping')" style="display:none">📁 Sonucu Dosyama Kaydet</button>
               <div class="disclaimer" style="margin-top:12px">⚠ Bu sonuç bir yapay zeka tahminidir. Kesin tanı için nöroloji uzmanına başvurunuz.</div>
               
               <!-- AI ASİSTAN HUB -->
@@ -2207,6 +2617,90 @@
                   <b>Not:</b> Değişim analizi en güncel "Normal" ve "İlaçlı" seans verileriniz baz alınarak hesaplanmaktadır.
                 </div>
              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEKME 4: HEKİM DASHBOARD -->
+    <div class="main-tab-panel" id="panel-doctor">
+      <div class="doctor-layout">
+        <!-- Sol taraf: Hasta Listesi -->
+        <div class="patient-list-sidebar">
+          <div style="font-size:0.75rem; font-weight:800; color:var(--accent); letter-spacing:1px; margin-bottom:8px; text-transform:uppercase">HASTALARIM</div>
+          <div style="position:relative; margin-bottom:12px">
+            <input type="text" id="patientSearchInput" oninput="filterPatients()" placeholder="Hasta ara..." style="width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.8rem">
+          </div>
+          <div id="patientListContainer" style="display:flex; flex-direction:column; gap:8px">
+            <div style="text-align:center; padding:20px; color:var(--muted); font-size:0.8rem">Hastalar yükleniyor...</div>
+          </div>
+        </div>
+
+        <!-- Sağ taraf: Hasta Detayları ve Kontroller -->
+        <div class="doctor-content-pane">
+          <!-- Başlangıçta boş karşılama ekranı -->
+          <div id="doctorWelcomeScreen" class="card doctor-welcome">
+            <div style="font-size:4rem; margin-bottom:16px">🩺</div>
+            <h2 style="font-family:var(--serif); color:var(--text); margin-bottom:8px">Hekim Portalı</h2>
+            <p style="font-size:0.85rem; max-width:400px; margin:0 auto; line-height:1.6">Lütfen sol taraftaki menüden incelemek istediğiniz hastayı seçin.</p>
+          </div>
+
+          <!-- Seçili hasta veri paneli -->
+          <div id="doctorPatientDetail" class="card" style="display:none; padding:24px">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:20px">
+              <div>
+                <h2 style="font-size:1.4rem; font-weight:800; color:var(--text)" id="docPatientName">...</h2>
+                <span style="font-size:0.75rem; color:var(--muted)">Yaş: <span id="docPatientAge">...</span> • Cinsiyet: <span id="docPatientGender">...</span></span>
+              </div>
+            </div>
+
+            <!-- Klinik Semptomlar Karşılaştırma Raporu -->
+            <div style="margin-bottom:24px">
+              <h3 style="font-size:0.9rem; font-weight:800; color:var(--accent); margin-bottom:16px; display:flex; align-items:center; gap:8px">
+                <span>📊</span> Karşılaştırmalı Seans Raporu (ON vs OFF)
+              </h3>
+              <div id="doctorReportInject">
+                <!-- Buraya seans kıyaslama raporu yüklenecek -->
+              </div>
+            </div>
+
+            <!-- Son Çizim Analizi -->
+            <div style="margin-bottom:24px" id="doctorDrawingSection">
+              <!-- Buraya son çizim analizi eklenecek -->
+            </div>
+
+            <!-- Tüm Test Geçmişi -->
+            <div style="margin-bottom:24px">
+              <h3 style="font-size:0.9rem; font-weight:800; color:var(--accent); margin-bottom:16px; display:flex; align-items:center; gap:8px">
+                <span>📂</span> Tüm Test Geçmişi & Seans Günlüğü
+              </h3>
+              <div id="doctorHistoryInject">
+                <!-- Buraya tüm test geçmişi tablosu yüklenecek -->
+              </div>
+            </div>
+
+            <!-- Doktor Notu Defteri -->
+            <div class="notes-editor-card">
+              <h3 style="font-size:0.9rem; font-weight:800; color:var(--accent2); margin-bottom:16px; display:flex; align-items:center; gap:8px">
+                <span>📝</span> Hekim Değerlendirme & Reçete Notları
+              </h3>
+              
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
+                <div>
+                  <label for="doctorNotesInput">Klinik Değerlendirme Bulguları</label>
+                  <textarea id="doctorNotesInput" placeholder="Hastanın motor koordinasyon bulguları, tremor analizi vb. notlar..."></textarea>
+                </div>
+                <div>
+                  <label for="doctorAdviseInput">Önerilen Tedavi & İlaç Ayarı</label>
+                  <textarea id="doctorAdviseInput" placeholder="Dozaj artırımı, egzersiz sıklığı, doktor randevusu önerileri..."></textarea>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
+                <span id="saveNotesStatus" style="font-family:var(--mono); font-size:0.7rem; color:var(--accent2)"></span>
+                <button class="doctor-action-btn" onclick="saveDoctorNotes()">Notları Dosyaya Kaydet</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2730,7 +3224,9 @@
       
       // Hoşgeldin mesajı
       setTimeout(() => {
-        showToast("NeuroScan'e hoş geldiniz. Analize başlamak için bir test seçin.", "info");
+        if (currentRole !== "doctor") {
+          showToast("NeuroScan'e hoş geldiniz. Analize başlamak için bir test seçin.", "info");
+        }
       }, 1000);
     });
 
@@ -2866,6 +3362,21 @@
       saveToHistory(r);
       calculateInsight();
       showToast("Analiz verileri klinik raporuna eklendi.", "success");
+
+      latestTremorResult = r;
+      if (currentRole === "patient") {
+        const saveBtn = document.getElementById("saveTremorBtn");
+        if (saveBtn) {
+          saveBtn.style.display = "block";
+          saveBtn.innerHTML = "📁 Sonucu Dosyama Kaydet";
+          saveBtn.disabled = false;
+          saveBtn.style.background = "";
+          saveBtn.style.color = "";
+        }
+      } else {
+        const saveBtn = document.getElementById("saveTremorBtn");
+        if (saveBtn) saveBtn.style.display = "none";
+      }
 
       // AI ASİSTAN YORUMU
       let aiAdvice = "Titreme verilerinizi analiz ettim. ";
@@ -3019,6 +3530,21 @@
 
       closeCameraHardware();
       showToast("Vuruş analizi klinik seansa kaydedildi.", "success");
+
+      latestTappingResult = r;
+      if (currentRole === "patient") {
+        const saveBtn = document.getElementById("saveTappingBtn");
+        if (saveBtn) {
+          saveBtn.style.display = "block";
+          saveBtn.innerHTML = "📁 Sonucu Dosyama Kaydet";
+          saveBtn.disabled = false;
+          saveBtn.style.background = "";
+          saveBtn.style.color = "";
+        }
+      } else {
+        const saveBtn = document.getElementById("saveTappingBtn");
+        if (saveBtn) saveBtn.style.display = "none";
+      }
     }
 
 
@@ -3342,6 +3868,21 @@
 
         saveToHistory(d, 'drawing');
         showToast("Çizim analizi kaydedildi.", "success");
+
+        latestDrawingResult = d;
+        if (currentRole === "patient") {
+          const saveBtn = document.getElementById("saveDrawingBtn");
+          if (saveBtn) {
+            saveBtn.style.display = "block";
+            saveBtn.innerHTML = "📁 Sonucu Dosyama Kaydet";
+            saveBtn.disabled = false;
+            saveBtn.style.background = "";
+            saveBtn.style.color = "";
+          }
+        } else {
+          const saveBtn = document.getElementById("saveDrawingBtn");
+          if (saveBtn) saveBtn.style.display = "none";
+        }
       } catch (e) {
         alert("➌ API bağlantı hatası!\npython app.py çalıştırın.");
       }
@@ -3351,6 +3892,657 @@
 
     checkAPI();
     setInterval(checkAPI, 10000);
+
+    // ── HASTA - HEKİM PANELİ ENTEGRASYONU ──
+    let currentUser = null;
+    let currentRole = null;
+    let latestDrawingResult = null;
+    let latestTremorResult = null;
+    let latestTappingResult = null;
+    let doctorPatients = [];
+    let selectedPatientId = null;
+
+    // Restore session on load
+    function restoreSession() {
+      const storedUser = localStorage.getItem("currentUser");
+      const storedRole = localStorage.getItem("currentRole");
+      const storedName = localStorage.getItem("currentUserName");
+      
+      if (storedUser && storedRole && storedName) {
+        currentUser = storedUser;
+        currentRole = storedRole;
+        
+        const loginScreen = document.getElementById("loginScreen");
+        if (loginScreen) {
+          loginScreen.classList.add("fade-out");
+        }
+        document.body.style.overflow = "auto";
+        
+        const userBtn = document.getElementById("currentUserBtn");
+        if (userBtn) {
+          userBtn.innerHTML = `👤 ${storedName}`;
+          userBtn.style.background = currentRole === 'doctor' ? 
+            "linear-gradient(135deg, #4299e1, var(--accent))" : 
+            "linear-gradient(135deg, var(--accent2), #22c55e)";
+          userBtn.style.color = currentRole === 'doctor' ? "white" : "#0a1a0a";
+        }
+        
+        handleRoleChange();
+      }
+    }
+    restoreSession();
+
+    function handleLoginClick() {
+      if (currentUser) {
+        toggleUserDropdown();
+      } else {
+        openLoginModal();
+      }
+    }
+
+    function selectLoginRole(role) {
+      document.querySelectorAll(".role-select-card").forEach(c => c.classList.remove("active"));
+      if (role === 'doctor') {
+        document.getElementById("roleCardDoctor").classList.add("active");
+        document.getElementById("loginUsername").value = "dr_ahmet";
+        document.getElementById("loginPassword").value = "doctor123";
+      } else if (role === 'patient') {
+        document.getElementById("roleCardPatient").classList.add("active");
+        document.getElementById("loginUsername").value = "fatma_demir";
+        document.getElementById("loginPassword").value = "patient123";
+      }
+    }
+
+    function openLoginModal() {
+      const loginScreen = document.getElementById("loginScreen");
+      if (loginScreen) {
+        loginScreen.classList.remove("fade-out");
+      }
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLoginModal() {
+      const loginScreen = document.getElementById("loginScreen");
+      if (loginScreen) {
+        loginScreen.classList.add("fade-out");
+      }
+      document.body.style.overflow = "auto";
+    }
+
+    async function submitLoginForm(event) {
+      event.preventDefault();
+      const userField = document.getElementById("loginUsername").value.trim();
+      const passField = document.getElementById("loginPassword").value;
+      
+      const btn = event.target.querySelector("button[type='submit']");
+      const oldText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Giriş yapılıyor...";
+      
+      try {
+        const res = await fetch(API + "/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: userField, password: passField })
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.message || "Giriş başarısız!", "warning");
+          btn.disabled = false;
+          btn.textContent = oldText;
+          return;
+        }
+        
+        const data = await res.json();
+        if (data && data.status === "success") {
+          currentUser = data.profile.id;
+          currentRole = data.role;
+          
+          localStorage.setItem("currentUser", currentUser);
+          localStorage.setItem("currentRole", currentRole);
+          localStorage.setItem("currentUserName", data.profile.name);
+          
+          const userBtn = document.getElementById("currentUserBtn");
+          userBtn.innerHTML = `👤 ${data.profile.name}`;
+          userBtn.style.background = currentRole === 'doctor' ? 
+            "linear-gradient(135deg, #4299e1, var(--accent))" : 
+            "linear-gradient(135deg, var(--accent2), #22c55e)";
+          userBtn.style.color = currentRole === 'doctor' ? "white" : "#0a1a0a";
+          
+          showToast(`Hoş geldiniz, ${data.profile.name}`, "success");
+          
+          const loginScreen = document.getElementById("loginScreen");
+          if (loginScreen) {
+            loginScreen.classList.add("fade-out");
+          }
+          document.body.style.overflow = "auto";
+          document.getElementById("loginForm").reset();
+          document.querySelectorAll(".role-select-card").forEach(c => c.classList.remove("active"));
+          
+          handleRoleChange();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    }
+
+    function logout() {
+      currentUser = null;
+      currentRole = null;
+      selectedPatientId = null;
+      
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("currentRole");
+      localStorage.removeItem("currentUserName");
+      
+      const userBtn = document.getElementById("currentUserBtn");
+      userBtn.innerHTML = "👤 Giriş Yap";
+      userBtn.style.background = "";
+      userBtn.style.color = "";
+      
+      const drop = document.getElementById("userDropdown");
+      if (drop) drop.style.display = "none";
+      
+      showToast("Çıkış yapıldı.", "info");
+      handleRoleChange();
+      
+      openLoginModal();
+    }
+
+    function toggleUserDropdown() {
+      const drop = document.getElementById("userDropdown");
+      if (drop) {
+        drop.style.display = drop.style.display === "none" ? "block" : "none";
+      }
+    }
+
+    // Dropdown dışına tıklandığında kapatma
+    document.addEventListener("click", function(e) {
+      const container = document.querySelector(".user-selector-container");
+      const drop = document.getElementById("userDropdown");
+      if (container && drop && !container.contains(e.target)) {
+        drop.style.display = "none";
+      }
+    });
+
+    function handleRoleChange() {
+      const docBtn = document.getElementById("doctorTabBtn");
+      const notesBanner = document.getElementById("patientNotesBanner");
+      const infoBtn = document.getElementById("infoBtn");
+      const onboardingCard = document.getElementById("onboardingCard");
+      
+      const drawingBtn = document.getElementById("drawingTabBtn");
+      const tremorBtn = document.getElementById("tremorTabBtn");
+      const tappingBtn = document.getElementById("tappingTabBtn");
+      const reportBtn = document.getElementById("reportTabBtn");
+      
+      // Kayıt butonlarını sıfırla
+      document.getElementById("saveDrawingBtn").style.display = "none";
+      document.getElementById("saveTremorBtn").style.display = "none";
+      document.getElementById("saveTappingBtn").style.display = "none";
+      
+      if (currentRole === "doctor") {
+        if (docBtn) docBtn.style.display = "flex";
+        if (notesBanner) notesBanner.classList.remove("active");
+        if (infoBtn) infoBtn.style.display = "none";
+        if (onboardingCard) onboardingCard.style.display = "none";
+        
+        // Hide analysis tabs
+        if (drawingBtn) drawingBtn.style.display = "none";
+        if (tremorBtn) tremorBtn.style.display = "none";
+        if (tappingBtn) tappingBtn.style.display = "none";
+        if (reportBtn) reportBtn.style.display = "none";
+        
+        // Hekim sekmesine geçiş ve dashboard yükleme
+        switchMainTab("doctor");
+        loadDoctorDashboard();
+      } else if (currentRole === "patient") {
+        if (docBtn) docBtn.style.display = "none";
+        if (infoBtn) infoBtn.style.display = "flex";
+        if (onboardingCard) onboardingCard.style.display = "flex";
+        
+        // Show analysis tabs
+        if (drawingBtn) drawingBtn.style.display = "flex";
+        if (tremorBtn) tremorBtn.style.display = "flex";
+        if (tappingBtn) tappingBtn.style.display = "flex";
+        if (reportBtn) reportBtn.style.display = "flex";
+        
+        const activeTab = document.querySelector(".main-tab.active");
+        if (activeTab && activeTab.getAttribute("onclick").includes("doctor")) {
+          switchMainTab("drawing");
+        }
+        
+        if (notesBanner) notesBanner.classList.add("active");
+        fetchPatientNotes();
+        
+        // Eğer daha önce yapılmış test varsa kaydet butonunu göster
+        if (latestDrawingResult) document.getElementById("saveDrawingBtn").style.display = "block";
+        if (latestTremorResult) document.getElementById("saveTremorBtn").style.display = "block";
+        if (latestTappingResult) document.getElementById("saveTappingBtn").style.display = "block";
+      } else {
+        if (docBtn) docBtn.style.display = "none";
+        if (notesBanner) notesBanner.classList.remove("active");
+        if (infoBtn) infoBtn.style.display = "flex";
+        if (onboardingCard) onboardingCard.style.display = "flex";
+        
+        // Show analysis tabs
+        if (drawingBtn) drawingBtn.style.display = "flex";
+        if (tremorBtn) tremorBtn.style.display = "flex";
+        if (tappingBtn) tappingBtn.style.display = "flex";
+        if (reportBtn) reportBtn.style.display = "flex";
+      }
+    }
+
+    async function fetchPatientNotes() {
+      if (!currentUser || currentRole !== "patient") return;
+      try {
+        const res = await fetch(`${API}/api/patients/${currentUser}`);
+        if (res.ok) {
+          const pat = await res.json();
+          document.getElementById("patientNotesContent").textContent = pat.doctor_notes || "Hekiminiz henüz değerlendirme notu girmemiş.";
+          document.getElementById("patientNotesAdvise").textContent = pat.doctor_advise || "Hekiminiz henüz reçete/tedavi önerisi eklememiş.";
+          document.getElementById("patientNotesDoctorName").textContent = "Dr. Ahmet Yılmaz";
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function saveActiveTest(type) {
+      if (!currentUser || currentRole !== "patient") {
+        showToast("Lütfen önce hasta girişi yapın!", "warning");
+        return;
+      }
+      
+      let payload = {
+        test_type: type,
+        medication: false,
+        result: {}
+      };
+      
+      let btnId = "";
+      if (type === "drawing") {
+        if (!latestDrawingResult) return;
+        payload.result = {
+          prediction: latestDrawingResult.prediction,
+          confidence: latestDrawingResult.confidence,
+          healthy_prob: latestDrawingResult.healthy_prob,
+          parkinson_prob: latestDrawingResult.parkinson_prob
+        };
+        btnId = "saveDrawingBtn";
+      } else if (type === "tremor") {
+        if (!latestTremorResult) return;
+        payload.medication = latestTremorResult.medication;
+        payload.result = {
+          frequency: latestTremorResult.frequency,
+          norm_amp_pct: latestTremorResult.norm_amp_pct,
+          updrs_score: latestTremorResult.updrs_score,
+          severity: latestTremorResult.severity,
+          risk_score: latestTremorResult.risk_score
+        };
+        btnId = "saveTremorBtn";
+      } else if (type === "tapping") {
+        if (!latestTappingResult) return;
+        payload.medication = latestTappingResult.medication;
+        payload.result = {
+          tap_rate: latestTappingResult.tap_rate,
+          amp_decay_pct: latestTappingResult.amp_decay_pct,
+          rhythm_cov: latestTappingResult.rhythm_cov,
+          tap_count: latestTappingResult.tap_count,
+          updrs_score: latestTappingResult.updrs_score,
+          severity: latestTappingResult.severity
+        };
+        btnId = "saveTappingBtn";
+      }
+      
+      try {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner"></span>Kaydediliyor...';
+        }
+        
+        const res = await fetch(`${API}/api/patients/${currentUser}/tests`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+          showToast("Analiz verisi profilinize eklendi ✓", "success");
+          if (btn) {
+            btn.innerHTML = "📁 Profilinize Kaydedildi ✓";
+            btn.style.background = "rgba(255,255,255,0.05)";
+            btn.style.color = "var(--muted)";
+          }
+          // Rapor sekmesindeyse raporu yenile
+          const activeTab = document.querySelector(".main-tab.active");
+          if (activeTab && activeTab.getAttribute("onclick").includes("report")) {
+            renderAdvancedReport();
+          }
+        } else {
+          showToast("Kayıt sırasında hata oluştu!", "warning");
+          if (btn) btn.disabled = false;
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+        const btn = document.getElementById(btnId);
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function loadDoctorDashboard() {
+      const container = document.getElementById("patientListContainer");
+      if (!container) return;
+      
+      try {
+        const res = await fetch(API + "/api/patients");
+        if (res.ok) {
+          doctorPatients = await res.json();
+          renderPatientList(doctorPatients);
+        }
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger)">Hata oluştu.</div>';
+      }
+    }
+
+    function renderPatientList(list) {
+      const container = document.getElementById("patientListContainer");
+      if (!container) return;
+      
+      if (list.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:0.8rem">Hasta bulunamadı.</div>';
+        return;
+      }
+      
+      container.innerHTML = list.map(p => {
+        const isActive = p.id === selectedPatientId ? 'active' : '';
+        const dateStr = p.last_test !== "Yok" ? p.last_test.split(" ")[0] : "Test Yok";
+        const severityColor = p.severity === 'normal' ? 'var(--accent2)' : 
+                              p.severity === 'hafif' ? 'var(--accent)' : 'var(--danger)';
+                              
+        return `
+          <div class="patient-item-card ${isActive}" onclick="selectPatient('${p.id}')">
+            <div class="name">${p.name}</div>
+            <div class="meta">
+              Yaş: ${p.age} • Cinsiyet: ${p.gender}<br>
+              Son Test: ${dateStr}<br>
+              Durum: <span style="color:${severityColor}; font-weight:bold">${p.severity.toUpperCase()}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterPatients() {
+      const q = document.getElementById("patientSearchInput").value.toLowerCase();
+      const filtered = doctorPatients.filter(p => p.name.toLowerCase().includes(q));
+      renderPatientList(filtered);
+    }
+
+    async function selectPatient(patient_id) {
+      selectedPatientId = patient_id;
+      
+      // Sidebar elemanlarında active class'ı güncelle
+      document.querySelectorAll(".patient-item-card").forEach(card => {
+        card.classList.remove("active");
+      });
+      
+      // Tıklanan elemanı aktif yap
+      loadDoctorDashboard();
+      
+      const welcome = document.getElementById("doctorWelcomeScreen");
+      const detail = document.getElementById("doctorPatientDetail");
+      
+      if (welcome) welcome.style.display = "none";
+      if (detail) detail.style.display = "block";
+      
+      try {
+        const res = await fetch(`${API}/api/patients/${patient_id}`);
+        if (!res.ok) return;
+        
+        const pat = await res.json();
+        
+        document.getElementById("docPatientName").textContent = pat.name;
+        document.getElementById("docPatientAge").textContent = pat.age;
+        document.getElementById("docPatientGender").textContent = pat.gender;
+        
+        document.getElementById("doctorNotesInput").value = pat.doctor_notes || "";
+        document.getElementById("doctorAdviseInput").value = pat.doctor_advise || "";
+        document.getElementById("saveNotesStatus").textContent = "";
+        
+        // 1. Son Çizim Analizi Render Et
+        const latestDrawing = pat.history.find(t => t.test_type === "drawing");
+        const drawingSection = document.getElementById("doctorDrawingSection");
+        if (drawingSection) {
+          if (latestDrawing && latestDrawing.result) {
+            const dRes = latestDrawing.result;
+            const isParkinson = dRes.prediction && dRes.prediction.toLowerCase() === "parkinson";
+            const color = isParkinson ? "var(--danger)" : "var(--accent2)";
+            
+            let confidencePercent = dRes.confidence || 0;
+            if (confidencePercent <= 1.0) {
+              confidencePercent = confidencePercent * 100;
+            }
+            const confidencePercentStr = confidencePercent.toFixed(1);
+            
+            drawingSection.innerHTML = `
+              <h3 style="font-size:0.9rem; font-weight:800; color:var(--accent); margin-bottom:12px; display:flex; align-items:center; gap:8px">
+                <span>✏️</span> Son Çizim Analizi (Spiral Çizimi)
+              </h3>
+              <div style="background:rgba(99, 179, 237, 0.04); border:1px solid var(--border); border-radius:14px; padding:16px; display:flex; justify-content:space-between; align-items:center">
+                <div>
+                  <div style="font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px">Tahmin Sınıfı</div>
+                  <div style="font-size:1.1rem; font-weight:800; color:${color}; margin-top:4px">
+                    ${isParkinson ? "⚠️ Parkinson Belirtileri Saptandı" : "✅ Sağlıklı / Normal"}
+                  </div>
+                  <div style="font-size:0.7rem; color:var(--muted); margin-top:4px; font-family:var(--mono)">Tarih: ${latestDrawing.timestamp}</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px">Güven Oranı</div>
+                  <div style="font-size:1.4rem; font-weight:800; color:var(--text); margin-top:4px">%${confidencePercentStr}</div>
+                </div>
+              </div>
+            `;
+          } else {
+            drawingSection.innerHTML = `
+              <h3 style="font-size:0.9rem; font-weight:800; color:var(--accent); margin-bottom:12px; display:flex; align-items:center; gap:8px">
+                <span>✏️</span> Son Çizim Analizi (Spiral Çizimi)
+              </h3>
+              <div style="text-align:center; padding:16px; color:var(--muted); font-size:0.8rem; border:1px dashed var(--border); border-radius:12px">
+                Hastanın kayıtlı çizim analizi bulunmamaktadır.
+              </div>
+            `;
+          }
+        }
+        
+        // 2. Tüm Test Geçmişi Tablosu Render Et
+        const historySection = document.getElementById("doctorHistoryInject");
+        if (historySection) {
+          if (pat.history && pat.history.length > 0) {
+            let tableHtml = `
+              <table class="scientific-table" style="font-size:0.75rem">
+                <thead>
+                  <tr>
+                    <th>Tarih</th>
+                    <th>Test Türü</th>
+                    <th>İlaç Durumu</th>
+                    <th>Özet Bulgular</th>
+                  </tr>
+                </thead>
+                <tbody>
+            `;
+            
+            pat.history.forEach(t => {
+              const testLabel = t.test_type === "drawing" ? "✏️ Çizim" :
+                                t.test_type === "tremor" ? "🤚 Titreme" : "👌 Bradikinezi";
+                                
+              const medLabel = t.test_type === "drawing" ? "—" :
+                               (t.medication ? "💊 İlaçlı (ON)" : "⏳ İlaçsız (OFF)");
+                               
+              let details = "";
+              if (t.test_type === "drawing") {
+                let confVal = t.result.confidence || 0;
+                if (confVal <= 1.0) {
+                  confVal = confVal * 100;
+                }
+                const conf = confVal.toFixed(0);
+                const isPk = t.result.prediction && t.result.prediction.toLowerCase() === "parkinson";
+                details = `${isPk ? "Parkinson Belirtileri" : "Sağlıklı"} (%${conf})`;
+              } else if (t.test_type === "tremor") {
+                details = `Genlik: %${t.result.norm_amp_pct ? t.result.norm_amp_pct.toFixed(1) : 0} • Frekans: ${t.result.frequency ? t.result.frequency.toFixed(1) : 0}Hz • UPDRS: ${t.result.updrs_score}`;
+              } else if (t.test_type === "tapping") {
+                details = `Vuruş: ${t.result.tap_count || t.result.score || 0} • Genlik Kaybı: %${t.result.amp_decay_pct ? t.result.amp_decay_pct.toFixed(0) : 0} • UPDRS: ${t.result.updrs_score}`;
+              }
+              
+              tableHtml += `
+                <tr>
+                  <td style="font-family:var(--mono); color:var(--muted)">${t.timestamp}</td>
+                  <td><b>${testLabel}</b></td>
+                  <td><span style="color:${t.medication ? 'var(--accent2)' : 'var(--accent3)'}">${medLabel}</span></td>
+                  <td>${details}</td>
+                </tr>
+              `;
+            });
+            
+            tableHtml += `
+                </tbody>
+              </table>
+            `;
+            historySection.innerHTML = tableHtml;
+          } else {
+            historySection.innerHTML = `
+              <div style="text-align:center; padding:20px; color:var(--muted); font-size:0.8rem; border:1px dashed var(--border); border-radius:12px">
+                Hastanın kayıtlı test geçmişi bulunmamaktadır.
+              </div>
+            `;
+          }
+        }
+        
+        loadDoctorReport(patient_id);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadDoctorReport(patient_id) {
+      const container = document.getElementById("doctorReportInject");
+      if (!container) return;
+      
+      container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted)">Karşılaştırma verileri yükleniyor...</div>';
+      
+      try {
+        const res = await fetch(`${API}/report/clinical?patient_id=${patient_id}`);
+        if (!res.ok) {
+          container.innerHTML = '<div style="color:var(--danger)">Rapor yüklenemedi.</div>';
+          return;
+        }
+        
+        const rep = await res.json();
+        
+        if (!rep.comparisons || rep.comparisons.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:20px; color:var(--muted); font-size:0.8rem; border:1px dashed var(--border); border-radius:12px">
+              Karşılaştırma için yeterli veri bulunamadı. Hastanın hem ilaçlı (ON) hem de ilaçsız (OFF) seans verileri olmalıdır.
+            </div>
+          `;
+          return;
+        }
+        
+        let html = `
+          <div style="background:rgba(99, 179, 237, 0.05); border:1px solid rgba(99,179,237,0.15); border-radius:12px; padding:14px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center">
+            <div>
+              <div style="font-size:0.6rem; color:var(--muted); text-transform:uppercase">Ortalama İlaç Yanıtı</div>
+              <div style="font-size:1.3rem; font-weight:800; color:var(--accent2)">%${rep.overall_improvement || 0} İyileşme</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:0.6rem; color:var(--muted); text-transform:uppercase">Klinik Değerlendirme</div>
+              <div style="font-size:0.95rem; font-weight:800; color:var(--accent)">${rep.overall_status}</div>
+            </div>
+          </div>
+          
+          <table class="scientific-table" style="font-size:0.75rem; margin-bottom:16px">
+            <thead>
+              <tr>
+                <th>Motor Test</th>
+                <th>Normal (OFF)</th>
+                <th>İlaçlı (ON)</th>
+                <th>Değişim</th>
+                <th>Değerlendirme</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        rep.comparisons.forEach(c => {
+          const isPos = c.improvement > 0;
+          const pctColor = isPos ? 'var(--accent2)' : 'var(--danger)';
+          const badgeBg = c.status === 'Olumlu Yanıt' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(251, 146, 60, 0.15)';
+          const badgeText = c.status === 'Olumlu Yanıt' ? '#4ade80' : '#fb923c';
+          
+          html += `
+            <tr>
+              <td><b>${c.type}</b></td>
+              <td>UPDRS ${c.off_score}</td>
+              <td>UPDRS ${c.on_score}</td>
+              <td style="color:${pctColor}; font-weight:bold">${isPos ? '+' : ''}%${c.improvement}</td>
+              <td><span style="padding:2px 8px; border-radius:6px; background:${badgeBg}; color:${badgeText}; font-size:0.65rem; font-weight:bold">${c.status}</span></td>
+            </tr>
+          `;
+        });
+        
+        html += `
+            </tbody>
+          </table>
+        `;
+        
+        container.innerHTML = html;
+        
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div style="color:var(--danger)">Bağlantı hatası.</div>';
+      }
+    }
+
+    async function saveDoctorNotes() {
+      if (!selectedPatientId) return;
+      
+      const notes = document.getElementById("doctorNotesInput").value;
+      const advise = document.getElementById("doctorAdviseInput").value;
+      const status = document.getElementById("saveNotesStatus");
+      
+      status.textContent = "Kaydediliyor...";
+      status.style.color = "var(--accent)";
+      
+      try {
+        const res = await fetch(`${API}/api/patients/${selectedPatientId}/notes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ doctor_notes: notes, doctor_advise: advise })
+        });
+        
+        if (res.ok) {
+          status.textContent = "Kaydedildi ✓";
+          status.style.color = "var(--accent2)";
+          showToast("Klinik notlar kaydedildi.", "success");
+          loadDoctorDashboard();
+        } else {
+          status.textContent = "Kayıt başarısız!";
+          status.style.color = "var(--danger)";
+        }
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Bağlantı hatası!";
+        status.style.color = "var(--danger)";
+      }
+    }
 
     // ── Bilgi Modal Yönetimi ──
     function openInfoModal() {

@@ -1,0 +1,74 @@
+Created At: 2026-06-04T08:09:59Z
+Completed At: 2026-06-04T08:10:11Z
+The following changes were made by the replace_file_content tool to: c:\Users\Fatmanur\Desktop\Parkinsons_Disease_GP2\parkinson_detection_app.html. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -2384,6 +2384,80 @@
+              </div>
+           </div>
+         </div>
++    </div>
++
++    <!-- SEKME 4: HEKİM DASHBOARD -->
++    <div class="main-tab-panel" id="panel-doctor">
++      <div class="doctor-layout">
++        <!-- Sol taraf: Hasta Listesi -->
++        <div class="patient-list-sidebar">
++          <div style="font-size:0.75rem; font-weight:800; color:var(--accent); letter-spacing:1px; margin-bottom:8px; text-transform:uppercase">HASTALARIM</div>
++          <div style="position:relative; margin-bottom:12px">
++            <input type="text" id="patientSearchInput" oninput="filterPatients()" placeholder="Hasta ara..." style="width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.8rem">
++          </div>
++          <div id="patientListContainer" style="display:flex; flex-direction:column; gap:8px">
++            <div style="text-align:center; padding:20px; color:var(--muted); font-size:0.8rem">Hastalar yükleniyor...</div>
++          </div>
++        </div>
++
++        <!-- Sağ taraf: Hasta Detayları ve Kontroller -->
++        <div class="doctor-content-pane">
++          <!-- Başlangıçta boş karşılama ekranı -->
++          <div id="doctorWelcomeScreen" class="card doctor-welcome">
++            <div style="font-size:4rem; margin-bottom:16px">🩺</div>
++            <h2 style="font-family:var(--serif); color:var(--text); margin-bottom:8px">Hekim Portalı</h2>
++            <p style="font-size:0.85rem; max-width:400px; margin:0 auto; line-height:1.6">Lütfen sol taraftaki menüden incelemek istediğiniz hastayı seçin.</p>
++          </div>
++
++     
+<truncated 1557 bytes>
+
++              </h3>
++              <div id="doctorReportInject">
++                <!-- Buraya seans kıyaslama raporu yüklenecek -->
++              </div>
++            </div>
++
++            <!-- Doktor Notu Defteri -->
++            <div class="notes-editor-card">
++              <h3 style="font-size:0.9rem; font-weight:800; color:var(--accent2); margin-bottom:16px; display:flex; align-items:center; gap:8px">
++                <span>📝</span> Hekim Değerlendirme & Reçete Notları
++              </h3>
++              
++              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
++                <div>
++                  <label for="doctorNotesInput">Klinik Değerlendirme Bulguları</label>
++                  <textarea id="doctorNotesInput" placeholder="Hastanın motor koordinasyon bulguları, tremor analizi vb. notlar..."></textarea>
++                </div>
++                <div>
++                  <label for="doctorAdviseInput">Önerilen Tedavi & İlaç Ayarı</label>
++                  <textarea id="doctorAdviseInput" placeholder="Dozaj artırımı, egzersiz sıklığı, doktor randevusu önerileri..."></textarea>
++                </div>
++              </div>
++
++              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
++                <span id="saveNotesStatus" style="font-family:var(--mono); font-size:0.7rem; color:var(--accent2)"></span>
++                <button class="doctor-action-btn" onclick="saveDoctorNotes()">Notları Dosyaya Kaydet</button>
++              </div>
++            </div>
++          </div>
++        </div>
+       </div>
+     </div>
+ 
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.
+
+We did our best to apply changes despite some inaccuracies. Double check if the edit applied is what you intended.

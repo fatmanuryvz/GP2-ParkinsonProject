@@ -1,0 +1,10 @@
+{
+  "AllowMultiple": "false",
+  "Description": "\"Marking verification task as completed in task.md\"",
+  "EndLine": "10",
+  "Instruction": "\"Mark the verification task as complete.\"",
+  "ReplacementContent": "\"- [x] Verify execution and correctness of both backend and frontend components\"",
+  "StartLine": "9",
+  "TargetContent": "\"- [ ] Verify execution and correctness of both backend and frontend components\"",
+  "TargetFile": "\"C:\\\\Users\\\\Fatmanur\\\\.gemini\\\\antigravity\\\\brain\\\\90559e59-97c3-4622-a4ea-b10bf846d583\\\\task.md\""
+}

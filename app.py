@@ -45,6 +45,261 @@ from scipy.fft import fft, fftfreq
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, JSON, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Load environment variables
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/neuroscan_db")
+
+# Fallback mechanism for database connection
+try:
+    engine = create_engine(DATABASE_URL)
+    # Test connection
+    with engine.connect() as conn:
+        pass
+    print("  [OK] PostgreSQL veritabanına bağlandı.")
+except Exception as e:
+    print(f"WARNING: PostgreSQL bağlantı hatası: {e}")
+    print("  [FALLBACK] Yerel SQLite (neuroscan.db) veritabanına bağlanılıyor...")
+    DATABASE_URL = "sqlite:///neuroscan.db"
+    engine = create_engine(DATABASE_URL)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# Modeller
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(String(50), primary_key=True)
+    username = Column(String(100), unique=True, nullable=False)
+    password_hash = Column(String(200), nullable=False)
+    role = Column(String(50), nullable=False)  # "doctor" or "patient"
+    name = Column(String(100), nullable=False)
+    
+    doctor_profile = relationship("Doctor", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    patient_profile = relationship("Patient", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+class Doctor(Base):
+    __tablename__ = "doctors"
+    
+    id = Column(String(50), ForeignKey("users.id"), primary_key=True)
+    specialty = Column(String(100), nullable=False)
+    
+    user = relationship("User", back_populates="doctor_profile")
+    patients = relationship("Patient", back_populates="doctor")
+
+class Patient(Base):
+    __tablename__ = "patients"
+    
+    id = Column(String(50), ForeignKey("users.id"), primary_key=True)
+    age = Column(Integer, nullable=False)
+    gender = Column(String(20), nullable=False)
+    doctor_id = Column(String(50), ForeignKey("doctors.id"), nullable=True)
+    doctor_notes = Column(Text, nullable=True)
+    doctor_advise = Column(Text, nullable=True)
+    
+    user = relationship("User", back_populates="patient_profile")
+    doctor = relationship("Doctor", back_populates="patients")
+    history = relationship("TestRecord", back_populates="patient", cascade="all, delete-orphan")
+
+class TestRecord(Base):
+    __tablename__ = "patient_history"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
+    timestamp = Column(String(50), nullable=False)
+    test_type = Column(String(50), nullable=False)
+    medication = Column(Boolean, default=False)
+    result = Column(JSON, nullable=False)
+    
+    patient = relationship("Patient", back_populates="history")
+
+# Veritabanını İlklendir ve Seed et
+def init_postgres_db():
+    Base.metadata.create_all(bind=engine)
+    session = SessionLocal()
+    try:
+        if session.query(User).count() == 0:
+            print("  [POSTGRES] Tablolar boş, seed veriler aktarılıyor...")
+            
+            # Users
+            doc_user = User(
+                id="D001",
+                username="dr_ahmet",
+                password_hash=generate_password_hash("doctor123"),
+                role="doctor",
+                name="Dr. Ahmet Yılmaz"
+            )
+            pat1_user = User(
+                id="H001",
+                username="fatma_demir",
+                password_hash=generate_password_hash("patient123"),
+                role="patient",
+                name="Fatma Demir"
+            )
+            pat2_user = User(
+                id="H002",
+                username="mehmet_kaya",
+                password_hash=generate_password_hash("patient456"),
+                role="patient",
+                name="Mehmet Kaya"
+            )
+            session.add_all([doc_user, pat1_user, pat2_user])
+            session.commit()
+            
+            # Doctor
+            doc_profile = Doctor(id="D001", specialty="Nöroloji Uzmanı")
+            session.add(doc_profile)
+            session.commit()
+            
+            # Patients
+            pat1_profile = Patient(
+                id="H001",
+                age=68,
+                gender="Kadın",
+                doctor_id="D001",
+                doctor_notes="Son seanslarda titreme hafif düzeyde görülse de bradikinezi vuruşlarında yavaşlama devam ediyor.",
+                doctor_advise="L-dopa dozunun günde 3 defaya çıkarılması düşünvelmeli, egzersizlere devam edilmeli."
+            )
+            pat2_profile = Patient(
+                id="H002",
+                age=72,
+                gender="Erkek",
+                doctor_id="D001",
+                doctor_notes="İlaç sonrası testlerde bradikinezi ve tremor bulgularında yaklaşık %40 oranında düzelme gözlendi. Tedaviye mevcut dozla devam ediliyor.",
+                doctor_advise="Doz düzeni korunmalı. Haftada 3 gün hafif yürüyüşler yapılmalı."
+            )
+            session.add_all([pat1_profile, pat2_profile])
+            session.commit()
+            
+            # Tests
+            t1 = TestRecord(
+                patient_id="H001",
+                timestamp="2026-06-03 14:20:15",
+                test_type="tremor",
+                medication=False,
+                result={
+                    "amplitude": 14.5,
+                    "norm_amp_pct": 2.2,
+                    "frequency": 4.8,
+                    "severity": "hafif",
+                    "risk": "Düşük",
+                    "risk_score": 45.0,
+                    "color": "#fbbf24",
+                    "recommendation": "Parkinson ile uyumlu ritmik titreme aktivitesi saptandı.",
+                    "duration": 5.0,
+                    "is_parkinson_freq": True,
+                    "updrs_score": 1
+                }
+            )
+            t2 = TestRecord(
+                patient_id="H001",
+                timestamp="2026-06-03 14:25:30",
+                test_type="tapping",
+                medication=False,
+                result={
+                    "tap_rate": 2.1,
+                    "amp_decay_pct": 35.0,
+                    "rhythm_cov": 0.28,
+                    "updrs_score": 2,
+                    "severity": "orta",
+                    "recommendation": "Belirgin yorulma ve vuruş genliğinde daralma (MDS-UPDRS 2).",
+                    "color": "#fb923c",
+                    "duration": 10.0,
+                    "tap_count": 21,
+                    "risk_score": 50.0
+                }
+            )
+            t3 = TestRecord(
+                patient_id="H002",
+                timestamp="2026-06-02 10:15:00",
+                test_type="tremor",
+                medication=False,
+                result={
+                    "amplitude": 38.2,
+                    "norm_amp_pct": 9.5,
+                    "frequency": 5.2,
+                    "severity": "belirgin",
+                    "risk": "Yüksek",
+                    "risk_score": 75.0,
+                    "color": "#f87171",
+                    "recommendation": "Kritik frekans bandında şiddetli titreme. Klinik takip önerilir.",
+                    "duration": 5.0,
+                    "is_parkinson_freq": True,
+                    "updrs_score": 3
+                }
+            )
+            t4 = TestRecord(
+                patient_id="H002",
+                timestamp="2026-06-02 10:20:00",
+                test_type="tremor",
+                medication=True,
+                result={
+                    "amplitude": 12.1,
+                    "norm_amp_pct": 2.0,
+                    "frequency": 5.0,
+                    "severity": "hafif",
+                    "risk": "Düşük",
+                    "risk_score": 25.0,
+                    "color": "#fbbf24",
+                    "recommendation": "Parkinson ile uyumlu ritmik titreme aktivitesi saptandı.",
+                    "duration": 5.0,
+                    "is_parkinson_freq": True,
+                    "updrs_score": 1
+                }
+            )
+            t5 = TestRecord(
+                patient_id="H002",
+                timestamp="2026-06-02 10:25:00",
+                test_type="tapping",
+                medication=False,
+                result={
+                    "tap_rate": 1.4,
+                    "amp_decay_pct": 45.2,
+                    "rhythm_cov": 0.42,
+                    "updrs_score": 3,
+                    "severity": "belirgin",
+                    "recommendation": "Ciddi bradikinezi bulguları. Vuruşlar arasında duraksamalar gözleniyor.",
+                    "color": "#f87171",
+                    "duration": 10.0,
+                    "tap_count": 14,
+                    "risk_score": 75.0
+                }
+            )
+            t6 = TestRecord(
+                patient_id="H002",
+                timestamp="2026-06-02 10:30:00",
+                test_type="tapping",
+                medication=True,
+                result={
+                    "tap_rate": 2.8,
+                    "amp_decay_pct": 18.0,
+                    "rhythm_cov": 0.15,
+                    "updrs_score": 1,
+                    "severity": "hafif",
+                    "recommendation": "Hafif hız kaybı veya yorulma saptandı. Erken evre bulgusu olabilir.",
+                    "color": "#fbbf24",
+                    "duration": 10.0,
+                    "tap_count": 28,
+                    "risk_score": 25.0
+                }
+            )
+            session.add_all([t1, t2, t3, t4, t5, t6])
+            session.commit()
+            print("  [OK] Veritabanı seed edildi.")
+    except Exception as e:
+        session.rollback()
+        print(f"WARNING Seeding Hatası: {e}")
+    finally:
+        session.close()
+
+init_postgres_db()
+
 MODEL_PATH = "parkinson_cnn_model.h5"
 IMG_SIZE   = (224, 224)
 
@@ -77,46 +332,50 @@ class CameraThread:
         self.thread    = None
 
     def start(self):
-        with self.lock:
-            if self.running: return True
-            
-            # Robust Camera Detection (Indices 0, 1, 2)
-            valid_cap = None
-            for i in range(4): # Try one more index
+        # 1. Zaten çalışıyorsa hızlıca dön (Kilit dışında kontrol)
+        if self.running: return True
+        
+        print("  [DEBUG] Kamera başlatma isteği alındı (Kilit dışı)...", flush=True)
+        valid_cap = None
+        
+        # 2. Kamera donanımını kilit DIŞINDA aç
+        # Windows için en kararlı mod CAP_MSMF'dir, onu en başa alıyoruz.
+        backends = [cv2.CAP_MSMF, None, cv2.CAP_DSHOW]
+        for backend in backends:
+            for i in range(2):
                 try:
-                    print(f"  [DEBUG] Kamera index {i} deneniyor...", flush=True)
-                    cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
-                    if cap.isOpened():
-                        valid_cap = cap
-                        print(f"  [OK] Kamera index {i} bulundu.", flush=True)
-                        break
+                    if backend is not None:
+                        print(f"  [DEBUG] Kamera index {i} deneniyor (Backend: {backend})...", flush=True)
+                        cap = cv2.VideoCapture(i, backend)
                     else:
-                        cap.release()
-                except Exception as e:
-                    print(f"  [DEBUG] Index {i} hatasi: {str(e)}", flush=True)
-            
-            if not valid_cap or not valid_cap.isOpened():
-                print("  [DEBUG] DSHOW başarısız, normal mod deneniyor...", flush=True)
-                try:
-                    valid_cap = cv2.VideoCapture(0)
-                except Exception as e:
-                    print(f"  [DEBUG] Fallback hatasi: {str(e)}", flush=True)
-                
-            if not valid_cap or not valid_cap.isOpened():
-                print("  [ERROR] Kamera acilamadi!", flush=True)
-                return False
+                        print(f"  [DEBUG] Kamera index {i} deneniyor (Varsayılan)...", flush=True)
+                        cap = cv2.VideoCapture(i)
+                        
+                    if cap.isOpened():
+                        ret, frame = cap.read()
+                        if ret:
+                            valid_cap = cap
+                            break
+                    cap.release()
+                except: pass
+            if valid_cap: break
 
-                
+        if not valid_cap:
+            print("  [ERROR] Kamera hiçbir modda açılamadı!", flush=True)
+            return False
+
+        # 3. Sadece değişken atamalarını kilit İÇİNDE yap
+        with self.lock:
             self.cap = valid_cap
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
             self.cap.set(cv2.CAP_PROP_FPS, 20)
-            
             self.running = True
             self.thread = threading.Thread(target=self._read_loop, daemon=True)
             self.thread.start()
-            print("  [OK] Kamera donanimi aktif")
-            return True
+            
+        print("  [OK] Kamera okuma thread'i başlatıldı.")
+        return True
 
 
     def stop(self):
@@ -167,7 +426,8 @@ tremor_lock  = threading.Lock()
 # ── SEANS BELLEĞİ (ON/OFF KIYASLAMASI İÇİN) ──
 session_data = {
     "tremor": {"none": None, "med": None},
-    "tapping": {"none": None, "med": None}
+    "tapping": {"none": None, "med": None},
+    "drawing": None # Çizim analizi (CNN) son sonucu
 }
 
 # Bradikinezi (Finger Tapping) state
@@ -688,11 +948,27 @@ def predict():
         else:
             pk_prob = float(pred[0][class_indices.get("parkinson",1)])
             h_prob  = float(pred[0][class_indices.get("healthy",0)])
-        prediction = "parkinson" if pk_prob > 0.35 else "healthy"
-        confidence = pk_prob if pk_prob > 0.35 else h_prob
-        return jsonify({"prediction":prediction,"confidence":round(confidence*100,2),
-                        "healthy_prob":round(h_prob*100,2),"parkinson_prob":round(pk_prob*100,2),
-                        "model":"MobileNetV2-NeuroScan"})
+        # Eşik değeri (Threshold) düşürüldü: Daha hassas analiz için 0.35 -> 0.20
+        # Kullanıcı "çok titreterek çiziyorum sağlıklı diyor" geri bildirimi üzerine hassasiyet artırıldı.
+        prediction = "parkinson" if pk_prob > 0.20 else "healthy"
+        confidence = pk_prob if pk_prob > 0.20 else h_prob
+        # Güven skorunu yüzdeye çevir
+        res_confidence = round(confidence * 100, 2)
+        
+        # Sonucu seans belleğine kaydet (Rapor için)
+        session_data["drawing"] = {
+            "prediction": prediction,
+            "confidence": res_confidence,
+            "timestamp": time.strftime("%H:%M:%S")
+        }
+
+        return jsonify({
+            "prediction": prediction,
+            "confidence": res_confidence,
+            "healthy_prob": round(h_prob * 100, 2),
+            "parkinson_prob": round(pk_prob * 100, 2),
+            "model": "MobileNetV2-NeuroScan-Sensitive"
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -818,49 +1094,292 @@ def health():
 
 @app.route("/report/clinical")
 def get_clinical_report():
-    t_data = session_data["tremor"]
-    p_data = session_data["tapping"]
+    patient_id = request.args.get("patient_id")
     
-    report = {
-        "comparisons": [],
-        "overall_status": "Veri Bekleniyor",
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-    }
-    
-    # Titreme Kıyaslaması (Genlik üzerinden hassas kıyas)
-    if t_data["none"] and t_data["med"]:
-        off_amp = t_data["none"]["norm_amp_pct"]
-        on_amp = t_data["med"]["norm_amp_pct"]
-        # İyileşme: (Eski Genlik - Yeni Genlik) / Eski Genlik
-        improvement = ((off_amp - on_amp) / max(off_amp, 0.1)) * 100
-        report["comparisons"].append({
-            "type": "Titreme",
-            "off_score": t_data["none"]["updrs_score"],
-            "on_score": t_data["med"]["updrs_score"],
-            "improvement": round(max(0, improvement), 1),
-            "status": "Olumlu Yanıt" if improvement >= 20 else "Kısıtlı Yanıt"
-        })
-
-    # Vuruş Kıyaslaması
-    if p_data["none"] and p_data["med"]:
-        diff = p_data["none"]["score"] - p_data["med"]["score"]
-        improvement = (diff / max(p_data["none"]["score"], 1)) * 100
-        report["comparisons"].append({
-            "type": "Bradikinezi",
-            "off_score": p_data["none"]["score"],
-            "on_score": p_data["med"]["score"],
-            "improvement": round(improvement, 1),
-            "status": "Olumlu Yanıt" if improvement >= 25 else "Kısıtlı Yanıt"
-        })
-    
-    if report["comparisons"]:
-        avg_imp = sum(c["improvement"] for c in report["comparisons"]) / len(report["comparisons"])
-        report["overall_improvement"] = round(avg_imp, 1)
-        if avg_imp >= 30: report["overall_status"] = "Optimal Tedavi Yanıtı"
-        elif avg_imp >= 15: report["overall_status"] = "Kısmi Tedavi Yanıtı"
-        else: report["overall_status"] = "Düşük Tedavi Yanıtı"
+    if not patient_id:
+        t_data = session_data["tremor"]
+        p_data = session_data["tapping"]
+        d_data = session_data["drawing"]
         
-    return jsonify(report)
+        report = {
+            "tremor": t_data,
+            "tapping": p_data,
+            "drawing": d_data,
+            "comparisons": [],
+            "overall_status": "Veri Bekleniyor",
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "doctor_notes": "",
+            "doctor_advise": ""
+        }
+        
+        # Titreme Kıyaslaması (Genlik üzerinden hassas kıyas)
+        if t_data["none"] and t_data["med"]:
+            off_amp = t_data["none"]["norm_amp_pct"]
+            on_amp = t_data["med"]["norm_amp_pct"]
+            # İyileşme: (Eski Genlik - Yeni Genlik) / Eski Genlik
+            improvement = ((off_amp - on_amp) / max(off_amp, 0.1)) * 100
+            report["comparisons"].append({
+                "type": "Titreme",
+                "off_score": t_data["none"]["updrs_score"],
+                "on_score": t_data["med"]["updrs_score"],
+                "improvement": round(max(0, improvement), 1),
+                "status": "Olumlu Yanıt" if improvement >= 20 else "Kısıtlı Yanıt"
+            })
+
+        # Vuruş Kıyaslaması
+        if p_data["none"] and p_data["med"]:
+            off_score = p_data["none"].get("updrs_score") or p_data["none"].get("score", 0)
+            on_score = p_data["med"].get("updrs_score") or p_data["med"].get("score", 0)
+            diff = off_score - on_score
+            improvement = (diff / max(off_score, 1)) * 100
+            report["comparisons"].append({
+                "type": "Bradikinezi",
+                "off_score": off_score,
+                "on_score": on_score,
+                "improvement": round(max(0, improvement), 1),
+                "status": "Olumlu Yanıt" if improvement >= 25 else "Kısıtlı Yanıt"
+            })
+        
+        if report["comparisons"]:
+            avg_imp = sum(c["improvement"] for c in report["comparisons"]) / len(report["comparisons"])
+            report["overall_improvement"] = round(avg_imp, 1)
+            if avg_imp >= 30: report["overall_status"] = "Optimal Tedavi Yanıtı"
+            elif avg_imp >= 15: report["overall_status"] = "Kısmi Tedavi Yanıtı"
+            else: report["overall_status"] = "Düşük Tedavi Yanıtı"
+            
+        return jsonify(report)
+
+    # Specific patient report from database
+    session = SessionLocal()
+    try:
+        pat = session.query(Patient).filter(Patient.id == patient_id).first()
+        if not pat:
+            return jsonify({"error": "Hasta bulunamadı"}), 404
+            
+        tremor_none = None
+        tremor_med = None
+        tapping_none = None
+        tapping_med = None
+        drawing_res = None
+        
+        # Sort history descending to get latest first
+        sorted_history = sorted(pat.history, key=lambda x: x.timestamp, reverse=True)
+        
+        for t in sorted_history:
+            if t.test_type == "tremor":
+                if t.medication and not tremor_med:
+                    tremor_med = t.result
+                elif not t.medication and not tremor_none:
+                    tremor_none = t.result
+            elif t.test_type == "tapping":
+                if t.medication and not tapping_med:
+                    tapping_med = t.result
+                elif not t.medication and not tapping_none:
+                    tapping_none = t.result
+            elif t.test_type == "drawing":
+                if not drawing_res:
+                    drawing_res = {
+                        "prediction": t.result["prediction"],
+                        "confidence": t.result["confidence"],
+                        "timestamp": t.timestamp.split(" ")[-1]
+                    }
+                    
+        report = {
+            "tremor": {"none": tremor_none, "med": tremor_med},
+            "tapping": {"none": tapping_none, "med": tapping_med},
+            "drawing": drawing_res,
+            "comparisons": [],
+            "overall_status": "Veri Bekleniyor",
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "doctor_notes": pat.doctor_notes or "",
+            "doctor_advise": pat.doctor_advise or ""
+        }
+        
+        if tremor_none and tremor_med:
+            off_amp = tremor_none["norm_amp_pct"]
+            on_amp = tremor_med["norm_amp_pct"]
+            improvement = ((off_amp - on_amp) / max(off_amp, 0.1)) * 100
+            report["comparisons"].append({
+                "type": "Titreme",
+                "off_score": tremor_none["updrs_score"],
+                "on_score": tremor_med["updrs_score"],
+                "improvement": round(max(0, improvement), 1),
+                "status": "Olumlu Yanıt" if improvement >= 20 else "Kısıtlı Yanıt"
+            })
+
+        if tapping_none and tapping_med:
+            diff = tapping_none["updrs_score"] - tapping_med["updrs_score"]
+            improvement = (diff / max(tapping_none["updrs_score"], 1)) * 100
+            report["comparisons"].append({
+                "type": "Bradikinezi",
+                "off_score": tapping_none["updrs_score"],
+                "on_score": tapping_med["updrs_score"],
+                "improvement": round(max(0, improvement), 1),
+                "status": "Olumlu Yanıt" if improvement >= 25 else "Kısıtlı Yanıt"
+            })
+            
+        if report["comparisons"]:
+            avg_imp = sum(c["improvement"] for c in report["comparisons"]) / len(report["comparisons"])
+            report["overall_improvement"] = round(avg_imp, 1)
+            if avg_imp >= 30: report["overall_status"] = "Optimal Tedavi Yanıtı"
+            elif avg_imp >= 15: report["overall_status"] = "Kısmi Tedavi Yanıtı"
+            else: report["overall_status"] = "Düşük Tedavi Yanıtı"
+            
+        return jsonify(report)
+    finally:
+        session.close()
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    req = request.json or {}
+    username = req.get("username")
+    password = req.get("password")
+    
+    if not username or not password:
+        return jsonify({"status": "error", "message": "Eksik kullanıcı adı veya şifre"}), 400
+        
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.username == username).first()
+        if user and check_password_hash(user.password_hash, password):
+            profile = {"id": user.id, "name": user.name}
+            if user.role == "doctor":
+                doc = session.query(Doctor).filter(Doctor.id == user.id).first()
+                if doc:
+                    profile["specialty"] = doc.specialty
+            elif user.role == "patient":
+                pat = session.query(Patient).filter(Patient.id == user.id).first()
+                if pat:
+                    profile["age"] = pat.age
+                    profile["gender"] = pat.gender
+                    profile["doctor_notes"] = pat.doctor_notes or ""
+                    profile["doctor_advise"] = pat.doctor_advise or ""
+                    
+            return jsonify({
+                "status": "success",
+                "role": user.role,
+                "profile": profile
+            })
+        return jsonify({"status": "error", "message": "Geçersiz kullanıcı adı veya şifre"}), 401
+    finally:
+        session.close()
+
+@app.route("/api/patients", methods=["GET"])
+def api_patients():
+    session = SessionLocal()
+    try:
+        patients = session.query(Patient).all()
+        summaries = []
+        for p in patients:
+            last_test = "Yok"
+            if p.history:
+                sorted_hist = sorted(p.history, key=lambda x: x.timestamp, reverse=True)
+                last_test = sorted_hist[0].timestamp
+                
+            summaries.append({
+                "id": p.id,
+                "name": p.user.name if p.user else "Bilinmeyen Hasta",
+                "age": p.age,
+                "gender": p.gender,
+                "test_count": len(p.history),
+                "last_test": last_test,
+                "severity": p.history[-1].result.get("severity", "normal") if p.history else "normal"
+            })
+        return jsonify(summaries)
+    finally:
+        session.close()
+
+@app.route("/api/patients/<patient_id>", methods=["GET"])
+def api_patient_detail(patient_id):
+    session = SessionLocal()
+    try:
+        p = session.query(Patient).filter(Patient.id == patient_id).first()
+        if p:
+            hist_list = []
+            for t in p.history:
+                hist_list.append({
+                    "timestamp": t.timestamp,
+                    "test_type": t.test_type,
+                    "medication": t.medication,
+                    "result": t.result
+                })
+            
+            hist_list = sorted(hist_list, key=lambda x: x["timestamp"], reverse=True)
+            
+            pat_data = {
+                "id": p.id,
+                "name": p.user.name if p.user else "Bilinmeyen Hasta",
+                "age": p.age,
+                "gender": p.gender,
+                "doctor_id": p.doctor_id,
+                "doctor_notes": p.doctor_notes or "",
+                "doctor_advise": p.doctor_advise or "",
+                "history": hist_list
+            }
+            return jsonify(pat_data)
+        return jsonify({"error": "Hasta bulunamadı"}), 404
+    finally:
+        session.close()
+
+@app.route("/api/patients/<patient_id>/notes", methods=["POST"])
+def api_save_notes(patient_id):
+    req = request.json or {}
+    notes = req.get("doctor_notes", "")
+    advise = req.get("doctor_advise", "")
+    
+    session = SessionLocal()
+    try:
+        p = session.query(Patient).filter(Patient.id == patient_id).first()
+        if p:
+            p.doctor_notes = notes
+            p.doctor_advise = advise
+            session.commit()
+            return jsonify({"status": "success", "message": "Notlar kaydedildi"})
+        return jsonify({"error": "Hasta bulunamadı"}), 404
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/patients/<patient_id>/tests", methods=["POST"])
+def api_save_test(patient_id):
+    req = request.json or {}
+    test_type = req.get("test_type")
+    medication = req.get("medication", False)
+    result = req.get("result")
+    
+    if not test_type or not result:
+        return jsonify({"error": "Eksik parametre"}), 400
+        
+    session = SessionLocal()
+    try:
+        p = session.query(Patient).filter(Patient.id == patient_id).first()
+        if p:
+            new_test = TestRecord(
+                patient_id=patient_id,
+                timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+                test_type=test_type,
+                medication=medication,
+                result=result
+            )
+            session.add(new_test)
+            session.commit()
+            return jsonify({
+                "status": "success",
+                "test": {
+                    "timestamp": new_test.timestamp,
+                    "test_type": new_test.test_type,
+                    "medication": new_test.medication,
+                    "result": new_test.result
+                }
+            })
+        return jsonify({"error": "Hasta bulunamadı"}), 404
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
 
 @app.route("/<path:filename>")
 def serve_static(filename):

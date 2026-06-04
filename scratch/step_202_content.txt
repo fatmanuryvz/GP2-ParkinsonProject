@@ -1,0 +1,18 @@
+Created At: 2026-06-04T08:12:40Z
+Completed At: 2026-06-04T08:12:40Z
+File Path: `file:///C:/Users/Fatmanur/.gemini/antigravity/brain/90559e59-97c3-4622-a4ea-b10bf846d583/task.md`
+Total Lines: 10
+Total Bytes: 739
+Showing lines 1 to 10
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: - [x] Initialize `patients.json` seed database helper
+2: - [x] Modify `app.py` to add new Patient-Doctor API endpoints
+3: - [x] Modify `app.py` test save logic to associate tests with patient profiles
+4: - [ ] Add Landing/Login screen UI to `parkinson_detection_app.html`
+5: - [ ] Add Patient greeting and doctor notes display to `parkinson_detection_app.html`
+6: - [ ] Add Doctor Dashboard tab panel `#panel-doctor` with patient list, history cards, and clinical notes editor
+7: - [ ] Implement AJAX calls for mock auth, fetching patient profiles, listing records, and saving clinical notes
+8: - [ ] Add "Sonucu Dosyama Kaydet" button to Drawing, Tremor, and Tapping result views
+9: - [ ] Verify execution and correctness of both backend and frontend components
+10: 
+The above content shows the entire, complete file contents of the requested file.

@@ -1,0 +1,138 @@
+{
+  "patients": [
+    {
+      "id": "H001",
+      "name": "Fatma Demir",
+      "age": 68,
+      "gender": "Kadın",
+      "doctor_id": "D001",
+      "doctor_notes": "Son seanslarda titreme hafif düzeyde görülse de bradikinezi vuruşlarında yavaşlama devam ediyor.",
+      "doctor_advise": "L-dopa dozunun günde 3 defaya çıkarılması düşünülmeli, egzersizlere devam edilmeli.",
+      "history": [
+        {
+          "timestamp": "2026-06-03 14:20:15",
+          "test_type": "tremor",
+          "medication": false,
+          "result": {
+            "amplitude": 14.5,
+            "norm_amp_pct": 2.2,
+            "frequency": 4.8,
+            "severity": "hafif",
+            "risk": "Düşük",
+            "risk_score": 45.0,
+            "color": "#fbbf24",
+            "recommendation": "Parkinson ile uyumlu ritmik titreme aktivitesi saptandı.",
+            "duration": 5.0,
+            "is_parkinson_freq": true,
+            "updrs_score": 1
+          }
+        },
+        {
+          "timestamp": "2026-06-03 14:25:30",
+          "test_type": "tapping",
+          "medication": false,
+          "result": {
+            "tap_rate": 2.1,
+            "amp_decay_pct": 35.0,
+            "rhythm_cov": 0.28,
+            "updrs_score": 2,
+            "severity": "orta",
+            "recommendation": "Belirgin yorulma ve vuruş genliğinde daralma (MDS-UPDRS 2).",
+            "color": "#fb923c",
+            "duration": 10.0,
+            "tap_count": 21,
+            "risk_score": 50.0
+          }
+        }
+      ]
+    },
+    {
+      "id": "H002",
+      "name": "Mehmet Kaya",
+      "age": 72,
+      "gender": "Erkek",
+      "doctor_id": "D001",
+      "doctor_notes": "İlaç sonrası testlerde bradikinezi ve tremor bulgularında yaklaşık %40 oranında düzelme gözlendi. Tedaviye mevcut dozla devam ediliyor.",
+      "doctor_advise": "Doz düzeni korunmalı. Haftada 3 gün hafif yürüyüşler yapılmalı.",
+      "history": [
+        {
+          "timestamp": "2026-06-02 10:15:00",
+          "test_type": "tremor",
+          "medication": false,
+          "result": {
+            "amplitude": 38.2,
+            "norm_amp_pct": 9.5,
+            "frequency": 5.2,
+            "severity": "belirgin",
+            "risk": "Yüksek",
+            "risk_score": 75.0,
+            "color": "#f87171",
+            "recommendation": "Kritik frekans bandında şiddetli titreme. Klinik takip önerilir.",
+            "duration": 5.0,
+            "is_parkinson_freq": true,
+            "updrs_score": 3
+          }
+        },
+        {
+          "timestamp": "2026-06-02 10:20:00",
+          "test_type": "tremor",
+          "medication": true,
+          "result": {
+            "amplitude": 12.1,
+            "norm_amp_pct": 2.0,
+            "frequency": 5.0,
+            "severity": "hafif",
+            "risk": "Düşük",
+            "risk_score": 25.0,
+            "color": "#fbbf24",
+            "recommendation": "Parkinson ile uyumlu ritmik titreme aktivitesi saptandı.",
+            "duration": 5.0,
+            "is_parkinson_freq": true,
+            "updrs_score": 1
+          }
+        },
+        {
+          "timestamp": "2026-06-02 10:25:00",
+          "test_type": "tapping",
+          "medication": false,
+          "result": {
+            "tap_rate": 1.4,
+            "amp_decay_pct": 45.2,
+            "rhythm_cov": 0.42,
+            "updrs_score": 3,
+            "severity": "belirgin",
+            "recommendation": "Ciddi bradikinezi bulguları. Vuruşlar arasında duraksamalar gözleniyor.",
+            "color": "#f87171",
+            "duration": 10.0,
+            "tap_count": 14,
+            "risk_score": 75.0
+          }
+        },
+        {
+          "timestamp": "2026-06-02 10:30:00",
+          "test_type": "tapping",
+          "medication": true,
+          "result": {
+            "tap_rate": 2.8,
+            "amp_decay_pct": 18.0,
+            "rhythm_cov": 0.15,
+            "updrs_score": 1,
+            "severity": "hafif",
+            "recommendation": "Hafif hız kaybı veya yorulma saptandı. Erken evre bulgusu olabilir.",
+            "color": "#fbbf24",
+            "duration": 10.0,
+            "tap_count": 28,
+            "risk_score": 25.0
+          }
+        }
+      ]
+    }
+  ],
+  "doctors": [
+    {
+      "id": "D001",
+      "name": "Dr. Ahmet Yılmaz",
+      "specialty": "Nöroloji Uzmanı"
+    }
+  ]
+}
