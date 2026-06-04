@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 import numpy as np
 from PIL import Image
-import io, json, os, time, threading
+import io, json, os, time, threading, random
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -80,6 +80,7 @@ class User(Base):
     password_hash = Column(String(200), nullable=False)
     role = Column(String(50), nullable=False)  # "doctor" or "patient"
     name = Column(String(100), nullable=False)
+    is_approved = Column(Boolean, default=False)
     
     doctor_profile = relationship("Doctor", back_populates="user", uselist=False, cascade="all, delete-orphan")
     patient_profile = relationship("Patient", back_populates="user", uselist=False, cascade="all, delete-orphan")
@@ -122,34 +123,80 @@ class TestRecord(Base):
 # Veritabanını İlklendir ve Seed et
 def init_postgres_db():
     Base.metadata.create_all(bind=engine)
+    
+    # Otomatik veritabanı göçü (Migration) - is_approved kolonu yoksa ekle
+    from sqlalchemy import text
+    has_column = False
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT is_approved FROM users LIMIT 1"))
+            has_column = True
+    except Exception:
+        pass
+
+    if not has_column:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_approved BOOLEAN DEFAULT TRUE"))
+            print("  [MIGRATION] 'is_approved' kolonu 'users' tablosuna başarıyla eklendi.")
+        except Exception as ex:
+            print(f"WARNING Migration Hatası: {ex}")
+
     session = SessionLocal()
     try:
+        # Ensure admin user exists even if database is not empty
+        admin_exists = session.query(User).filter(User.username == "admin").first()
+        if not admin_exists:
+            print("  [POSTGRES] Admin kullanıcısı bulunamadı, seed ediliyor...")
+            admin_user = User(
+                id="A001",
+                username="admin",
+                password_hash=generate_password_hash("admin123"),
+                role="admin",
+                name="Sistem Yöneticisi",
+                is_approved=True
+            )
+            session.add(admin_user)
+            session.commit()
+            print("  [OK] Admin kullanıcısı eklendi.")
+
         if session.query(User).count() == 0:
             print("  [POSTGRES] Tablolar boş, seed veriler aktarılıyor...")
             
             # Users
+            admin_user = User(
+                id="A001",
+                username="admin",
+                password_hash=generate_password_hash("admin123"),
+                role="admin",
+                name="Sistem Yöneticisi",
+                is_approved=True
+            )
             doc_user = User(
                 id="D001",
                 username="dr_ahmet",
                 password_hash=generate_password_hash("doctor123"),
                 role="doctor",
-                name="Dr. Ahmet Yılmaz"
+                name="Dr. Ahmet Yılmaz",
+                is_approved=True
             )
             pat1_user = User(
                 id="H001",
                 username="fatma_demir",
                 password_hash=generate_password_hash("patient123"),
                 role="patient",
-                name="Fatma Demir"
+                name="Fatma Demir",
+                is_approved=True
             )
             pat2_user = User(
                 id="H002",
                 username="mehmet_kaya",
                 password_hash=generate_password_hash("patient456"),
                 role="patient",
-                name="Mehmet Kaya"
+                name="Mehmet Kaya",
+                is_approved=True
             )
-            session.add_all([doc_user, pat1_user, pat2_user])
+            session.add_all([admin_user, doc_user, pat1_user, pat2_user])
             session.commit()
             
             # Doctor
@@ -1242,6 +1289,8 @@ def api_login():
     try:
         user = session.query(User).filter(User.username == username).first()
         if user and check_password_hash(user.password_hash, password):
+            if not user.is_approved:
+                return jsonify({"status": "error", "message": "Kaydınız henüz hekim tarafından onaylanmamıştır. Lütfen daha sonra tekrar deneyiniz."}), 403
             profile = {"id": user.id, "name": user.name}
             if user.role == "doctor":
                 doc = session.query(Doctor).filter(Doctor.id == user.id).first()
@@ -1268,7 +1317,7 @@ def api_login():
 def api_patients():
     session = SessionLocal()
     try:
-        patients = session.query(Patient).all()
+        patients = session.query(Patient).join(User).filter(User.is_approved == True).all()
         summaries = []
         for p in patients:
             last_test = "Yok"
@@ -1378,6 +1427,320 @@ def api_save_test(patient_id):
     except Exception as e:
         session.rollback()
         return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/register", methods=["POST"])
+def api_register():
+    req = request.json or {}
+    username = req.get("username")
+    password = req.get("password")
+    name = req.get("name")
+    age = req.get("age")
+    gender = req.get("gender")
+    
+    if not all([username, password, name, age, gender]):
+        return jsonify({"status": "error", "message": "Eksik kayıt bilgileri"}), 400
+        
+    session = SessionLocal()
+    try:
+        # Check if username exists
+        existing = session.query(User).filter(User.username == username).first()
+        if existing:
+            return jsonify({"status": "error", "message": "Bu kullanıcı adı zaten alınmış"}), 400
+            
+        # Generate unique Patient ID
+        while True:
+            new_id = f"H{random.randint(100, 999)}"
+            exists = session.query(User).filter(User.id == new_id).first()
+            if not exists:
+                break
+                
+        # Create User
+        new_user = User(
+            id=new_id,
+            username=username,
+            password_hash=generate_password_hash(password),
+            role="patient",
+            name=name,
+            is_approved=False
+        )
+        session.add(new_user)
+        session.commit()
+        
+        # Create Patient
+        new_patient = Patient(
+            id=new_id,
+            age=int(age),
+            gender=gender,
+            doctor_id="D001" # Default doctor in seed
+        )
+        session.add(new_patient)
+        session.commit()
+        
+        return jsonify({"status": "success", "message": "Kayıt talebiniz alındı! Hekim onayından sonra giriş yapabilirsiniz."})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/patients/pending", methods=["GET"])
+def api_pending_patients():
+    session = SessionLocal()
+    try:
+        pending = session.query(Patient).join(User).filter(User.is_approved == False).all()
+        result = []
+        for p in pending:
+            result.append({
+                "id": p.id,
+                "name": p.user.name if p.user else "Bilinmeyen Hasta",
+                "username": p.user.username if p.user else "",
+                "age": p.age,
+                "gender": p.gender
+            })
+        return jsonify(result)
+    finally:
+        session.close()
+
+@app.route("/api/patients/approve/<patient_id>", methods=["POST"])
+def api_approve_patient(patient_id):
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == patient_id).first()
+        if not user:
+            return jsonify({"status": "error", "message": "Hasta bulunamadı"}), 404
+        user.is_approved = True
+        session.commit()
+        return jsonify({"status": "success", "message": "Hasta kaydı onaylandı."})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/patients/reject/<patient_id>", methods=["POST"])
+def api_reject_patient(patient_id):
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == patient_id).first()
+        if not user:
+            return jsonify({"status": "error", "message": "Hasta bulunamadı"}), 404
+        session.delete(user)
+        session.commit()
+        return jsonify({"status": "success", "message": "Hasta kaydı reddedildi."})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+# ── ADMIN ENDPOINTS ──
+
+@app.route("/api/admin/stats", methods=["GET"])
+def api_admin_stats():
+    session = SessionLocal()
+    try:
+        total_doctors = session.query(User).filter(User.role == "doctor").count()
+        total_patients = session.query(User).filter(User.role == "patient").count()
+        total_tests = session.query(TestRecord).count()
+        db_type = "PostgreSQL" if "postgresql" in DATABASE_URL else "SQLite"
+        
+        return jsonify({
+            "status": "success",
+            "total_doctors": total_doctors,
+            "total_patients": total_patients,
+            "total_tests": total_tests,
+            "db_type": db_type
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/admin/doctors", methods=["GET", "POST"])
+def api_admin_doctors():
+    session = SessionLocal()
+    try:
+        if request.method == "GET":
+            doctors = session.query(Doctor).all()
+            result = []
+            for d in doctors:
+                result.append({
+                    "id": d.id,
+                    "name": d.user.name if d.user else "Bilinmeyen Hekim",
+                    "username": d.user.username if d.user else "",
+                    "specialty": d.specialty
+                })
+            return jsonify(result)
+            
+        elif request.method == "POST":
+            req = request.json or {}
+            username = req.get("username")
+            password = req.get("password")
+            name = req.get("name")
+            specialty = req.get("specialty", "Nöroloji Uzmanı")
+            
+            if not all([username, password, name]):
+                return jsonify({"status": "error", "message": "Eksik hekim bilgileri"}), 400
+                
+            existing = session.query(User).filter(User.username == username).first()
+            if existing:
+                return jsonify({"status": "error", "message": "Bu kullanıcı adı zaten alınmış"}), 400
+                
+            while True:
+                new_id = f"D{random.randint(100, 999)}"
+                exists = session.query(User).filter(User.id == new_id).first()
+                if not exists:
+                    break
+                    
+            new_user = User(
+                id=new_id,
+                username=username,
+                password_hash=generate_password_hash(password),
+                role="doctor",
+                name=name,
+                is_approved=True
+            )
+            session.add(new_user)
+            session.commit()
+            
+            new_doc = Doctor(
+                id=new_id,
+                specialty=specialty
+            )
+            session.add(new_doc)
+            session.commit()
+            
+            return jsonify({"status": "success", "message": "Yeni hekim kaydı oluşturuldu."})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/admin/doctors/<doctor_id>", methods=["DELETE"])
+def api_admin_delete_doctor(doctor_id):
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == doctor_id, User.role == "doctor").first()
+        if not user:
+            return jsonify({"status": "error", "message": "Hekim bulunamadı"}), 404
+        session.delete(user)
+        session.commit()
+        return jsonify({"status": "success", "message": "Hekim kaydı silindi."})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/admin/patients", methods=["GET"])
+def api_admin_patients():
+    session = SessionLocal()
+    try:
+        patients = session.query(Patient).all()
+        result = []
+        for p in patients:
+            result.append({
+                "id": p.id,
+                "name": p.user.name if p.user else "Bilinmeyen Hasta",
+                "username": p.user.username if p.user else "",
+                "age": p.age,
+                "gender": p.gender,
+                "is_approved": p.user.is_approved if p.user else False,
+                "test_count": len(p.history)
+            })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/admin/patients/<patient_id>", methods=["DELETE"])
+def api_admin_delete_patient(patient_id):
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == patient_id, User.role == "patient").first()
+        if not user:
+            return jsonify({"status": "error", "message": "Hasta bulunamadı"}), 404
+        session.delete(user)
+        session.commit()
+        return jsonify({"status": "success", "message": "Hasta kaydı silindi."})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+
+# ── HEKİM PANELİ DOĞRUDAN HASTA EKLEME / SİLME ──
+
+@app.route("/api/patients", methods=["POST"])
+def api_add_patient_directly():
+    req = request.json or {}
+    username = req.get("username")
+    password = req.get("password")
+    name = req.get("name")
+    age = req.get("age")
+    gender = req.get("gender")
+    doctor_id = req.get("doctor_id")
+    
+    if not all([username, password, name, age, gender, doctor_id]):
+        return jsonify({"status": "error", "message": "Eksik hasta bilgileri"}), 400
+        
+    session = SessionLocal()
+    try:
+        existing = session.query(User).filter(User.username == username).first()
+        if existing:
+            return jsonify({"status": "error", "message": "Bu kullanıcı adı zaten alınmış"}), 400
+            
+        while True:
+            new_id = f"H{random.randint(100, 999)}"
+            exists = session.query(User).filter(User.id == new_id).first()
+            if not exists:
+                break
+                
+        new_user = User(
+            id=new_id,
+            username=username,
+            password_hash=generate_password_hash(password),
+            role="patient",
+            name=name,
+            is_approved=True
+        )
+        session.add(new_user)
+        session.commit()
+        
+        new_patient = Patient(
+            id=new_id,
+            age=int(age),
+            gender=gender,
+            doctor_id=doctor_id
+        )
+        session.add(new_patient)
+        session.commit()
+        
+        return jsonify({"status": "success", "message": "Hasta başarıyla eklendi."})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        session.close()
+
+@app.route("/api/patients/<patient_id>", methods=["DELETE"])
+def api_delete_patient_directly(patient_id):
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == patient_id, User.role == "patient").first()
+        if not user:
+            return jsonify({"status": "error", "message": "Hasta bulunamadı"}), 404
+        session.delete(user)
+        session.commit()
+        return jsonify({"status": "success", "message": "Hasta başarıyla silindi."})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
     finally:
         session.close()
 

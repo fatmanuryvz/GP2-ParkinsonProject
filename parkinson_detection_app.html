@@ -1788,15 +1788,15 @@
       
       .role-selector-row {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
         margin-bottom: 24px;
       }
       .role-select-card {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 16px;
-        padding: 16px;
+        padding: 12px 6px;
         text-align: center;
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1812,17 +1812,17 @@
         box-shadow: 0 0 15px rgba(99, 179, 237, 0.15);
       }
       .role-select-card .icon {
-        font-size: 1.8rem;
-        margin-bottom: 8px;
+        font-size: 1.6rem;
+        margin-bottom: 6px;
         display: block;
       }
       .role-select-card .title {
         font-weight: 700;
-        font-size: 0.82rem;
+        font-size: 0.78rem;
         color: var(--text);
       }
       .role-select-card .desc {
-        font-size: 0.65rem;
+        font-size: 0.58rem;
         color: var(--muted);
         margin-top: 4px;
       }
@@ -1935,7 +1935,7 @@
         <p class="login-logo-subtitle">Parkinson Erken Tanı ve Takip Sistemi</p>
       </div>
 
-      <div class="role-selector-row">
+      <div class="role-selector-row" id="roleSelectorRow">
         <div class="role-select-card" id="roleCardDoctor" onclick="selectLoginRole('doctor')">
           <span class="icon">🩺</span>
           <div class="title">Hekim Girişi</div>
@@ -1945,6 +1945,11 @@
           <span class="icon">👤</span>
           <div class="title">Hasta Girişi</div>
           <div class="desc">Motor Analizleri</div>
+        </div>
+        <div class="role-select-card" id="roleCardAdmin" onclick="selectLoginRole('admin')">
+          <span class="icon">⚙️</span>
+          <div class="title">Yönetici Girişi</div>
+          <div class="desc">Sistem Ayarları</div>
         </div>
       </div>
 
@@ -1960,9 +1965,46 @@
         <button type="submit" class="login-submit-btn">
           <span>🔒</span> Sisteme Güvenli Giriş Yap
         </button>
+        <div style="text-align:center; margin-top:14px; font-size:0.8rem">
+          Hesabınız yok mu? <a href="#" onclick="toggleRegisterForm(true); event.preventDefault();" style="color:var(--accent); font-weight:bold; text-decoration:underline">Hasta Kaydı Oluştur</a>
+        </div>
+      </form>
+
+      <form id="registerForm" onsubmit="submitRegisterForm(event)" style="display:none">
+        <div class="login-input-group">
+          <label for="regName">Ad Soyad</label>
+          <input type="text" id="regName" class="login-input-field" placeholder="Ad Soyad giriniz" required>
+        </div>
+        <div class="login-input-group">
+          <label for="regUsername">Kullanıcı Adı</label>
+          <input type="text" id="regUsername" class="login-input-field" placeholder="Kullanıcı adı belirleyin" required autocomplete="username">
+        </div>
+        <div class="login-input-group">
+          <label for="regPassword">Şifre</label>
+          <input type="password" id="regPassword" class="login-input-field" placeholder="••••••••" required autocomplete="new-password">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+          <div class="login-input-group">
+            <label for="regAge">Yaş</label>
+            <input type="number" id="regAge" class="login-input-field" placeholder="Yaş" required min="1" max="120">
+          </div>
+          <div class="login-input-group">
+            <label for="regGender">Cinsiyet</label>
+            <select id="regGender" class="login-input-field" style="height:44px; padding:0 16px" required>
+              <option value="Erkek">Erkek</option>
+              <option value="Kadın">Kadın</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="login-submit-btn" style="background:linear-gradient(135deg, var(--accent3), var(--danger)); color:white">
+          <span>📝</span> Kayıt Talebi Gönder
+        </button>
+        <div style="text-align:center; margin-top:14px; font-size:0.8rem">
+          Zaten hesabınız var mı? <a href="#" onclick="toggleRegisterForm(false); event.preventDefault();" style="color:var(--accent); font-weight:bold; text-decoration:underline">Giriş Yap</a>
+        </div>
       </form>
       
-      <div class="login-footer-hints">
+      <div class="login-footer-hints" id="loginFooterHints">
         Giriş yapmak için yukarıdaki kartlara tıklayarak deneme profillerini otomatik doldurabilirsiniz.
       </div>
     </div>
@@ -2045,6 +2087,9 @@
       </button>
       <button class="main-tab" id="doctorTabBtn" onclick="switchMainTab('doctor')" style="display:none">
         🩺 Hekim Paneli
+      </button>
+      <button class="main-tab" id="adminTabBtn" onclick="switchMainTab('admin')" style="display:none">
+        ⚙️ Sistem Yönetimi
       </button>
     </div>
 
@@ -2628,12 +2673,42 @@
       <div class="doctor-layout">
         <!-- Sol taraf: Hasta Listesi -->
         <div class="patient-list-sidebar">
-          <div style="font-size:0.75rem; font-weight:800; color:var(--accent); letter-spacing:1px; margin-bottom:8px; text-transform:uppercase">HASTALARIM</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+            <div style="font-size:0.75rem; font-weight:800; color:var(--accent); letter-spacing:1px; text-transform:uppercase">HASTALARIM</div>
+            <button onclick="toggleAddPatientForm(true)" style="background:none; border:none; color:var(--accent2); font-size:0.72rem; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:2px">➕ Hasta Ekle</button>
+          </div>
+
+          <form id="doctorAddPatientForm" onsubmit="addPatientDirectly(event)" style="display:none; background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:12px; border-radius:10px; margin-bottom:14px">
+            <div style="font-size:0.75rem; font-weight:800; color:var(--accent2); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center">
+              <span>HASTA EKLE</span>
+              <button type="button" onclick="toggleAddPatientForm(false)" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.9rem">✕</button>
+            </div>
+            <div style="margin-bottom:8px">
+              <input type="text" id="docNewPatName" class="login-input-field" style="padding:6px 10px; font-size:0.75rem" placeholder="Ad Soyad" required>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px">
+              <input type="text" id="docNewPatUsername" class="login-input-field" style="padding:6px 10px; font-size:0.75rem" placeholder="Kullanıcı adı" required>
+              <input type="password" id="docNewPatPassword" class="login-input-field" style="padding:6px 10px; font-size:0.75rem" placeholder="Şifre" required>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px">
+              <input type="number" id="docNewPatAge" class="login-input-field" style="padding:6px 10px; font-size:0.75rem" placeholder="Yaş" required min="1" max="120">
+              <select id="docNewPatGender" class="login-input-field" style="height:30px; padding:0 8px; font-size:0.75rem" required>
+                <option value="Erkek">Erkek</option>
+                <option value="Kadın">Kadın</option>
+              </select>
+            </div>
+            <button type="submit" class="login-submit-btn" style="height:30px; border-radius:6px; font-size:0.75rem; margin-top:0">💾 Hasta Kaydet</button>
+          </form>
           <div style="position:relative; margin-bottom:12px">
             <input type="text" id="patientSearchInput" oninput="filterPatients()" placeholder="Hasta ara..." style="width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.8rem">
           </div>
           <div id="patientListContainer" style="display:flex; flex-direction:column; gap:8px">
             <div style="text-align:center; padding:20px; color:var(--muted); font-size:0.8rem">Hastalar yükleniyor...</div>
+          </div>
+          
+          <div style="font-size:0.75rem; font-weight:800; color:var(--accent3); letter-spacing:1px; margin-top:24px; margin-bottom:12px; text-transform:uppercase; border-top:1px dashed var(--border); padding-top:16px">ONAY BEKLEYENLER</div>
+          <div id="pendingPatientListContainer" style="display:flex; flex-direction:column; gap:8px">
+            <div style="text-align:center; padding:10px; color:var(--muted); font-size:0.75rem">Onay bekleyen kayıt yok</div>
           </div>
         </div>
 
@@ -2653,6 +2728,9 @@
                 <h2 style="font-size:1.4rem; font-weight:800; color:var(--text)" id="docPatientName">...</h2>
                 <span style="font-size:0.75rem; color:var(--muted)">Yaş: <span id="docPatientAge">...</span> • Cinsiyet: <span id="docPatientGender">...</span></span>
               </div>
+              <button onclick="deletePatientDoctor()" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; color:#ef4444; font-size:0.72rem; font-weight:bold; padding:6px 12px; cursor:pointer; transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">
+                🗑 Hastayı Sistemden Sil
+              </button>
             </div>
 
             <!-- Klinik Semptomlar Karşılaştırma Raporu -->
@@ -2701,6 +2779,111 @@
                 <span id="saveNotesStatus" style="font-family:var(--mono); font-size:0.7rem; color:var(--accent2)"></span>
                 <button class="doctor-action-btn" onclick="saveDoctorNotes()">Notları Dosyaya Kaydet</button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEKME 4.5: SİSTEM YÖNETİCİSİ (ADMIN) DASHBOARD -->
+    <div class="main-tab-panel" id="panel-admin">
+      <div class="stats-row" style="margin-bottom: 24px; grid-template-columns: repeat(4, 1fr)">
+        <div class="stat-card" style="padding: 16px">
+          <span class="stat-val" style="color:var(--accent)" id="admin-stat-doctors">0</span>
+          <div class="stat-label">Toplam Hekim</div>
+        </div>
+        <div class="stat-card" style="padding: 16px">
+          <span class="stat-val" style="color:var(--accent2)" id="admin-stat-patients">0</span>
+          <div class="stat-label">Toplam Hasta</div>
+        </div>
+        <div class="stat-card" style="padding: 16px">
+          <span class="stat-val" style="color:#a78bfa" id="admin-stat-tests">0</span>
+          <div class="stat-label">Toplam Motor Testi</div>
+        </div>
+        <div class="stat-card" style="padding: 16px">
+          <span class="stat-val" style="color:var(--accent3)" id="admin-stat-db">SQLite</span>
+          <div class="stat-label">Aktif Veritabanı</div>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-icon" style="background:rgba(99,179,237,0.15)">🩺</div>Hekim Yönetimi
+            </div>
+            <span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">Sistem Hekimleri</span>
+          </div>
+          <div class="card-body">
+            <form id="adminAddDoctorForm" onsubmit="addDoctorSubmit(event)" style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:16px; border-radius:12px; margin-bottom:20px">
+              <div style="font-size:0.8rem; font-weight:800; color:var(--accent); margin-bottom:12px; text-transform:uppercase">Yeni Hekim Tanımla</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
+                <div>
+                  <label style="font-size:0.65rem; color:var(--muted); display:block; margin-bottom:4px">Ad Soyad</label>
+                  <input type="text" id="adminDocName" class="login-input-field" style="padding:8px 12px; font-size:0.8rem" placeholder="Dr. Ad Soyad" required>
+                </div>
+                <div>
+                  <label style="font-size:0.65rem; color:var(--muted); display:block; margin-bottom:4px">Uzmanlık Alanı</label>
+                  <input type="text" id="adminDocSpecialty" class="login-input-field" style="padding:8px 12px; font-size:0.8rem" placeholder="Örn: Nöroloji Uzmanı" required value="Nöroloji Uzmanı">
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
+                <div>
+                  <label style="font-size:0.65rem; color:var(--muted); display:block; margin-bottom:4px">Kullanıcı Adı</label>
+                  <input type="text" id="adminDocUsername" class="login-input-field" style="padding:8px 12px; font-size:0.8rem" placeholder="Kullanıcı adı" required>
+                </div>
+                <div>
+                  <label style="font-size:0.65rem; color:var(--muted); display:block; margin-bottom:4px">Giriş Şifresi</label>
+                  <input type="password" id="adminDocPassword" class="login-input-field" style="padding:8px 12px; font-size:0.8rem" placeholder="••••••••" required>
+                </div>
+              </div>
+              <button type="submit" class="login-submit-btn" style="height:36px; border-radius:8px; font-size:0.8rem; margin-top:0">➕ Hekim Hesabı Oluştur</button>
+            </form>
+
+            <div style="overflow-x:auto">
+              <table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:left">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border); color:var(--muted); font-size:0.7rem; text-transform:uppercase">
+                    <th style="padding:8px">ID</th>
+                    <th style="padding:8px">Ad Soyad</th>
+                    <th style="padding:8px">Kullanıcı Adı</th>
+                    <th style="padding:8px">Uzmanlık</th>
+                    <th style="padding:8px; text-align:center">İşlem</th>
+                  </tr>
+                </thead>
+                <tbody id="adminDoctorsTableBody">
+                  <tr><td colspan="5" style="text-align:center; padding:12px; color:var(--muted)">Yükleniyor...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-icon" style="background:rgba(251,146,60,0.15)">👤</div>Hasta Veritabanı
+            </div>
+            <span style="font-family:var(--mono);font-size:0.65rem;color:var(--accent2)">Kayıtlı Tüm Hastalar</span>
+          </div>
+          <div class="card-body">
+            <div style="overflow-x:auto; max-height:480px; overflow-y:auto">
+              <table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:left">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border); color:var(--muted); font-size:0.7rem; text-transform:uppercase">
+                    <th style="padding:8px">ID</th>
+                    <th style="padding:8px">Ad Soyad</th>
+                    <th style="padding:8px">Kullanıcı Adı</th>
+                    <th style="padding:8px">Cinsiyet/Yaş</th>
+                    <th style="padding:8px">Test Sayısı</th>
+                    <th style="padding:8px">Onay Durumu</th>
+                    <th style="padding:8px; text-align:center">İşlem</th>
+                  </tr>
+                </thead>
+                <tbody id="adminPatientsTableBody">
+                  <tr><td colspan="7" style="text-align:center; padding:12px; color:var(--muted)">Yükleniyor...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -4032,6 +4215,64 @@
       }
     }
 
+    function toggleRegisterForm(show) {
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const roleSelectorRow = document.getElementById("roleSelectorRow");
+      const loginFooterHints = document.getElementById("loginFooterHints");
+      
+      if (show) {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+        if (roleSelectorRow) roleSelectorRow.style.display = "none";
+        if (loginFooterHints) loginFooterHints.style.display = "none";
+      } else {
+        loginForm.style.display = "block";
+        registerForm.style.display = "none";
+        if (roleSelectorRow) roleSelectorRow.style.display = "grid";
+        if (loginFooterHints) loginFooterHints.style.display = "block";
+      }
+    }
+
+    async function submitRegisterForm(event) {
+      event.preventDefault();
+      
+      const name = document.getElementById("regName").value.trim();
+      const username = document.getElementById("regUsername").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const age = document.getElementById("regAge").value;
+      const gender = document.getElementById("regGender").value;
+      
+      const btn = event.target.querySelector("button[type='submit']");
+      const oldText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Kaydediliyor...";
+      
+      try {
+        const res = await fetch(API + "/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, username, password, age, gender })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.message || "Kayıt oluşturulamadı!", "warning");
+          return;
+        }
+        
+        showToast(data.message, "success");
+        event.target.reset();
+        toggleRegisterForm(false);
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    }
+
     function logout() {
       currentUser = null;
       currentRole = null;
@@ -4073,6 +4314,7 @@
 
     function handleRoleChange() {
       const docBtn = document.getElementById("doctorTabBtn");
+      const adminBtn = document.getElementById("adminTabBtn");
       const notesBanner = document.getElementById("patientNotesBanner");
       const infoBtn = document.getElementById("infoBtn");
       const onboardingCard = document.getElementById("onboardingCard");
@@ -4087,7 +4329,24 @@
       document.getElementById("saveTremorBtn").style.display = "none";
       document.getElementById("saveTappingBtn").style.display = "none";
       
-      if (currentRole === "doctor") {
+      if (adminBtn) adminBtn.style.display = "none";
+      if (docBtn) docBtn.style.display = "none";
+      
+      if (currentRole === "admin") {
+        if (adminBtn) adminBtn.style.display = "flex";
+        if (notesBanner) notesBanner.classList.remove("active");
+        if (infoBtn) infoBtn.style.display = "none";
+        if (onboardingCard) onboardingCard.style.display = "none";
+        
+        // Hide analysis tabs
+        if (drawingBtn) drawingBtn.style.display = "none";
+        if (tremorBtn) tremorBtn.style.display = "none";
+        if (tappingBtn) tappingBtn.style.display = "none";
+        if (reportBtn) reportBtn.style.display = "none";
+        
+        switchMainTab("admin");
+        loadAdminDashboard();
+      } else if (currentRole === "doctor") {
         if (docBtn) docBtn.style.display = "flex";
         if (notesBanner) notesBanner.classList.remove("active");
         if (infoBtn) infoBtn.style.display = "none";
@@ -4103,7 +4362,6 @@
         switchMainTab("doctor");
         loadDoctorDashboard();
       } else if (currentRole === "patient") {
-        if (docBtn) docBtn.style.display = "none";
         if (infoBtn) infoBtn.style.display = "flex";
         if (onboardingCard) onboardingCard.style.display = "flex";
         
@@ -4114,7 +4372,7 @@
         if (reportBtn) reportBtn.style.display = "flex";
         
         const activeTab = document.querySelector(".main-tab.active");
-        if (activeTab && activeTab.getAttribute("onclick").includes("doctor")) {
+        if (activeTab && (activeTab.getAttribute("onclick").includes("doctor") || activeTab.getAttribute("onclick").includes("admin"))) {
           switchMainTab("drawing");
         }
         
@@ -4126,8 +4384,6 @@
         if (latestTremorResult) document.getElementById("saveTremorBtn").style.display = "block";
         if (latestTappingResult) document.getElementById("saveTappingBtn").style.display = "block";
       } else {
-        if (docBtn) docBtn.style.display = "none";
-        if (notesBanner) notesBanner.classList.remove("active");
         if (infoBtn) infoBtn.style.display = "flex";
         if (onboardingCard) onboardingCard.style.display = "flex";
         
@@ -4248,9 +4504,316 @@
           doctorPatients = await res.json();
           renderPatientList(doctorPatients);
         }
+        await loadPendingPatients();
       } catch (err) {
         console.error(err);
         container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger)">Hata oluştu.</div>';
+      }
+    }
+
+    async function loadPendingPatients() {
+      const container = document.getElementById("pendingPatientListContainer");
+      if (!container) return;
+      
+      try {
+        const res = await fetch(API + "/api/patients/pending");
+        if (res.ok) {
+          const list = await res.json();
+          if (list.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:10px; color:var(--muted); font-size:0.75rem">Onay bekleyen kayıt yok</div>';
+            return;
+          }
+          
+          container.innerHTML = list.map(p => `
+            <div class="patient-item-card" style="cursor:default; border:1px solid rgba(251,146,60,0.2); background:rgba(251,146,60,0.02); padding:10px; border-radius:8px">
+              <div class="name" style="font-weight:bold; font-size:0.82rem; margin-bottom:4px">${p.name}</div>
+              <div class="meta" style="font-size:0.7rem; color:var(--muted); margin-bottom:8px; line-height:1.4">
+                Kullanıcı: ${p.username}<br>
+                Yaş: ${p.age} • Cinsiyet: ${p.gender}
+              </div>
+              <div style="display:flex; gap:6px">
+                <button onclick="approvePatient('${p.id}')" style="flex:1; font-size:0.7rem; font-weight:bold; padding:6px 4px; border:none; border-radius:6px; background:#22c55e; color:#060912; cursor:pointer; transition:opacity 0.2s">Onayla</button>
+                <button onclick="rejectPatient('${p.id}')" style="flex:1; font-size:0.7rem; font-weight:bold; padding:6px 4px; border:none; border-radius:6px; background:#ef4444; color:white; cursor:pointer; transition:opacity 0.2s">Reddet</button>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div style="text-align:center; padding:10px; color:var(--danger); font-size:0.75rem">Hata oluştu.</div>';
+      }
+    }
+
+    async function approvePatient(patient_id) {
+      if (!confirm("Bu hastanın kaydını onaylamak istiyor musunuz?")) return;
+      try {
+        const res = await fetch(`${API}/api/patients/approve/${patient_id}`, {
+          method: "POST"
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "success");
+          loadDoctorDashboard();
+        } else {
+          showToast(data.message || "İşlem başarısız!", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      }
+    }
+
+    async function rejectPatient(patient_id) {
+      if (!confirm("Bu hastanın kayıt başvurusunu reddedip silmek istediğinize emin misiniz?")) return;
+      try {
+        const res = await fetch(`${API}/api/patients/reject/${patient_id}`, {
+          method: "POST"
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "info");
+          loadDoctorDashboard();
+        } else {
+          showToast(data.message || "İşlem başarısız!", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      }
+    }
+
+    // ── ADMIN JS LOGIC ──
+
+    async function loadAdminDashboard() {
+      // 1. Stats
+      try {
+        const res = await fetch(API + "/api/admin/stats");
+        if (res.ok) {
+          const stats = await res.json();
+          document.getElementById("admin-stat-doctors").textContent = stats.total_doctors;
+          document.getElementById("admin-stat-patients").textContent = stats.total_patients;
+          document.getElementById("admin-stat-tests").textContent = stats.total_tests;
+          document.getElementById("admin-stat-db").textContent = stats.db_type;
+        }
+      } catch (err) { console.error(err); }
+
+      // 2. Doctors
+      try {
+        const res = await fetch(API + "/api/admin/doctors");
+        if (res.ok) {
+          const docs = await res.json();
+          const tbody = document.getElementById("adminDoctorsTableBody");
+          if (docs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:12px; color:var(--muted)">Sistemde kayıtlı hekim bulunamadı.</td></tr>';
+          } else {
+            tbody.innerHTML = docs.map(d => `
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04)">
+                <td style="padding:10px; font-family:var(--mono); color:var(--accent2)">${d.id}</td>
+                <td style="padding:10px; font-weight:bold">${d.name}</td>
+                <td style="padding:10px; color:var(--muted)">${d.username}</td>
+                <td style="padding:10px">${d.specialty}</td>
+                <td style="padding:10px; text-align:center">
+                  <button onclick="deleteDoctor('${d.id}')" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); border-radius:6px; color:#ef4444; font-size:0.7rem; padding:4px 8px; cursor:pointer">Sil</button>
+                </td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (err) { console.error(err); }
+
+      // 3. Patients
+      try {
+        const res = await fetch(API + "/api/admin/patients");
+        if (res.ok) {
+          const pats = await res.json();
+          const tbody = document.getElementById("adminPatientsTableBody");
+          if (pats.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:12px; color:var(--muted)">Sistemde kayıtlı hasta bulunamadı.</td></tr>';
+          } else {
+            tbody.innerHTML = pats.map(p => {
+              const approvalBadge = p.is_approved ? 
+                '<span style="color:#22c55e; font-weight:bold">✓ Onaylı</span>' : 
+                '<span style="color:#fb923c; font-weight:bold">⏳ Bekliyor</span>';
+              
+              const actionBtn = p.is_approved ? 
+                `<button onclick="deletePatientAdmin('${p.id}')" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); border-radius:6px; color:#ef4444; font-size:0.7rem; padding:4px 8px; cursor:pointer">Sil</button>` :
+                `<div style="display:flex; gap:4px; justify-content:center">
+                  <button onclick="approvePatientAdmin('${p.id}')" style="background:#22c55e; border:none; border-radius:6px; color:#060912; font-size:0.7rem; font-weight:bold; padding:4px 8px; cursor:pointer">Onayla</button>
+                  <button onclick="deletePatientAdmin('${p.id}')" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); border-radius:6px; color:#ef4444; font-size:0.7rem; padding:4px 8px; cursor:pointer">Sil</button>
+                </div>`;
+
+              return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04)">
+                  <td style="padding:10px; font-family:var(--mono); color:var(--accent2)">${p.id}</td>
+                  <td style="padding:10px; font-weight:bold">${p.name}</td>
+                  <td style="padding:10px; color:var(--muted)">${p.username}</td>
+                  <td style="padding:10px">${p.gender} / ${p.age}</td>
+                  <td style="padding:10px; text-align:center">${p.test_count}</td>
+                  <td style="padding:10px">${approvalBadge}</td>
+                  <td style="padding:10px; text-align:center">${actionBtn}</td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+      } catch (err) { console.error(err); }
+    }
+
+    async function addDoctorSubmit(event) {
+      event.preventDefault();
+      const name = document.getElementById("adminDocName").value.trim();
+      const specialty = document.getElementById("adminDocSpecialty").value.trim();
+      const username = document.getElementById("adminDocUsername").value.trim();
+      const password = document.getElementById("adminDocPassword").value;
+
+      const btn = event.target.querySelector("button[type='submit']");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API + "/api/admin/doctors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, specialty, username, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "success");
+          event.target.reset();
+          loadAdminDashboard();
+        } else {
+          showToast(data.message || "İşlem başarısız!", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteDoctor(doctor_id) {
+      if (!confirm("Bu hekimi sistemden silmek istediğinize emin misiniz? (Hekimin tüm hastaları ve kayıtları silinebilir!)")) return;
+      try {
+        const res = await fetch(`${API}/api/admin/doctors/${doctor_id}`, {
+          method: "DELETE"
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "info");
+          loadAdminDashboard();
+        } else {
+          showToast(data.message || "İşlem başarısız!", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      }
+    }
+
+    async function approvePatientAdmin(patient_id) {
+      try {
+        const res = await fetch(`${API}/api/patients/approve/${patient_id}`, {
+          method: "POST"
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "success");
+          loadAdminDashboard();
+        } else {
+          showToast(data.message || "İşlem başarısız!", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      }
+    }
+
+    async function deletePatientAdmin(patient_id) {
+      if (!confirm("Bu hastayı sistemden silmek istediğinize emin misiniz?")) return;
+      try {
+        const res = await fetch(`${API}/api/admin/patients/${patient_id}`, {
+          method: "DELETE"
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "info");
+          loadAdminDashboard();
+        } else {
+          showToast(data.message || "İşlem başarısız!", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      }
+    }
+
+
+    // ── HEKİM HASTA EKLEME & SİLME JS LOGIC ──
+
+    function toggleAddPatientForm(show) {
+      const form = document.getElementById("doctorAddPatientForm");
+      if (form) {
+        form.style.display = show ? "block" : "none";
+      }
+    }
+
+    async function addPatientDirectly(event) {
+      event.preventDefault();
+      const name = document.getElementById("docNewPatName").value.trim();
+      const username = document.getElementById("docNewPatUsername").value.trim();
+      const password = document.getElementById("docNewPatPassword").value;
+      const age = document.getElementById("docNewPatAge").value;
+      const gender = document.getElementById("docNewPatGender").value;
+
+      const btn = event.target.querySelector("button[type='submit']");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API + "/api/patients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, username, password, age, gender, doctor_id: currentUser })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "success");
+          event.target.reset();
+          toggleAddPatientForm(false);
+          loadDoctorDashboard();
+        } else {
+          showToast(data.message || "İşlem başarısız!", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function deletePatientDoctor() {
+      if (!selectedPatientId) return;
+      if (!confirm("Seçili hastayı sistemden silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) return;
+      
+      try {
+        const res = await fetch(`${API}/api/patients/${selectedPatientId}`, {
+          method: "DELETE"
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "info");
+          selectedPatientId = null;
+          
+          loadDoctorDashboard();
+          
+          document.getElementById("doctorWelcomeScreen").style.display = "flex";
+          document.getElementById("doctorPatientDetail").style.display = "none";
+        } else {
+          showToast(data.message || "İşlem başarısız!", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Bağlantı hatası!", "warning");
       }
     }
 
